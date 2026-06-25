@@ -127,6 +127,7 @@ func TestLogin(t *testing.T) {
 
 	tests := []struct {
 		testName    string
+		secret      string
 		input       LoginInput
 		validateErr error
 		repoUser    *domain.User
@@ -135,24 +136,35 @@ func TestLogin(t *testing.T) {
 	}{
 		{
 			testName: "success",
+			secret:   "test-secret",
 			input:    LoginInput{Email: "test@example.com", Password: rawPassword},
 			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
 		},
 		{
 			testName:    "validationError",
+			secret:      "test-secret",
 			input:       LoginInput{Email: "", Password: rawPassword},
 			validateErr: errors.New("Email: email is required."),
 			wantErr:     true,
 		},
 		{
 			testName: "userNotFound",
+			secret:   "test-secret",
 			input:    LoginInput{Email: "notfound@example.com", Password: rawPassword},
 			repoErr:  domain.ErrNotFound,
 			wantErr:  true,
 		},
 		{
 			testName: "passwordMismatch",
+			secret:   "test-secret",
 			input:    LoginInput{Email: "test@example.com", Password: "WrongPass99"},
+			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
+			wantErr:  true,
+		},
+		{
+			testName: "secretEmpty",
+			secret:   "",
+			input:    LoginInput{Email: "test@example.com", Password: rawPassword},
 			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
 			wantErr:  true,
 		},
@@ -160,7 +172,7 @@ func TestLogin(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			t.Setenv("SECRET", "test-secret")
+			t.Setenv("SECRET", tc.secret)
 
 			mockRepo := &mockUserRepository{
 				createUserFn: func(ctx context.Context, user domain.CreateUser) (*domain.User, error) {

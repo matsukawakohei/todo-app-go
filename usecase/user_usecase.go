@@ -89,6 +89,12 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 		"user_id": user.ID,
 		"exp":     time.Now().Add(time.Hour * 12).Unix(),
 	})
+
+	secret := os.Getenv("SECRET")
+	if secret == "" {
+		slog.With("request_id").Error("SECRET is empty")
+		return "", domain.ErrUnexpected
+	}
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
 	if err != nil {
 		return "", err
