@@ -8,6 +8,13 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
+var (
+	lowercasePasswordRe = regexp.MustCompile(`[a-z]`)
+	uppercasePasswordRe = regexp.MustCompile(`[A-Z]`)
+	numberPasswordRe    = regexp.MustCompile(`[0-9]`)
+	alnumPasswordRe     = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+)
+
 type UserValidator interface {
 	SignUpValidate(ctx context.Context, input SignUpInput) error
 	LoginValidate(ctx context.Context, input LoginInput) error
@@ -37,10 +44,10 @@ func (uv *userValidator) SignUpValidate(ctx context.Context, input SignUpInput) 
 			&input.Password,
 			validation.Required.Error("password is required"),
 			validation.RuneLength(6, 30).Error("limited min 6 max 30 char"),
-			validation.Match(regexp.MustCompile(`[a-z]`)).Error("required lower case"),
-			validation.Match(regexp.MustCompile(`[A-Z]`)).Error("required upper case"),
-			validation.Match(regexp.MustCompile(`[0-9]`)).Error("required number"),
-			validation.Match(regexp.MustCompile(`^[a-zA-Z0-9]+$`)).Error("invalid format"),
+			validation.Match(lowercasePasswordRe).Error("required lower case"),
+			validation.Match(uppercasePasswordRe).Error("required upper case"),
+			validation.Match(numberPasswordRe).Error("required number"),
+			validation.Match(alnumPasswordRe).Error("invalid format"),
 		),
 	)
 }
