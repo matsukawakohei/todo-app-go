@@ -164,6 +164,10 @@ func TestSignUpValidate(t *testing.T) {
 			
 			err := v.SignUpValidate(context.Background(), input)
 			if tc.hasError {
+				if err == nil {
+					t.Errorf("expect err is not nil: but got nil")
+					return
+				}
 				if err.Error() != tc.expected {
 					t.Errorf("expect err is %v; but got %v", tc.expected, err)
 				}
