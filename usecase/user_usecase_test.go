@@ -3,8 +3,10 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/matsukawakohei/todo-app-go/domain"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -190,8 +192,25 @@ func TestLogin(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			if token == "" {
-				t.Errorf("expected non-empty token but got empty string")
+			parsed, parseErr := jwt.Parse(token, func(t *jwt.Token) (any, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+				}
+				return []byte("test-secret"), nil
+			})
+			if parseErr != nil {
+				t.Errorf("failed to parse token: %v", parseErr)
+				return
+			}
+			claims, ok := parsed.Claims.(jwt.MapClaims)
+			if !ok || !parsed.Valid {
+				t.Errorf("token is invalid")
+				return
+			}
+			if userID, ok := claims["user_id"]; !ok {
+				t.Errorf("user_id claim is missing")
+			} else if userID != float64(tc.repoUser.ID) {
+				t.Errorf("expect user_id %v; but got %v", float64(tc.repoUser.ID), userID)
 			}
 		})
 	}
