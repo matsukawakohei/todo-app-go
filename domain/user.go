@@ -4,6 +4,7 @@ import "time"
 
 type User struct {
 	ID uint
+	Name string
 	Email string
 	Password string
 	CreatedAt time.Time
@@ -11,7 +12,7 @@ type User struct {
 }
 
 type CreateUser struct {
-	ID uint
+	Name string
 	Email string
 	Password string
 }

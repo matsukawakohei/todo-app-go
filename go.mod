@@ -1,3 +1,11 @@
 module github.com/matsukawakohei/todo-app-go
 
-go 1.24.3
+go 1.25.0
+
+require (
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
+	golang.org/x/crypto v0.53.0
+)
+
+require github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
