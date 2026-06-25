@@ -99,7 +99,7 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 		slog.Error("SECRET is empty")
 		return "", domain.ErrUnexpected
 	}
-	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to sign jwt: %v", err))
 		return "", domain.ErrUnexpected
