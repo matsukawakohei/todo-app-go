@@ -67,8 +67,10 @@ func TestSignUp(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var capturedPassword string
 			mockRepo := &mockUserRepository{
 				createUserFn: func(ctx context.Context, user domain.CreateUser) (*domain.User, error) {
+					capturedPassword = user.Password
 					return tc.repoUser, tc.repoErr
 				},
 				getUserByEmailFn: func(ctx context.Context, email string) (*domain.User, error) {
@@ -102,6 +104,12 @@ func TestSignUp(t *testing.T) {
 			}
 			if output.Email != tc.repoUser.Email {
 				t.Errorf("expect output.Email is %s; but got %s", tc.repoUser.Email, output.Email)
+			}
+			if capturedPassword == tc.input.Password {
+				t.Errorf("password should be hashed, but got plain text")
+			}
+			if err := bcrypt.CompareHashAndPassword([]byte(capturedPassword), []byte(tc.input.Password)); err != nil {
+				t.Errorf("stored password is not a valid bcrypt hash: %v", err)
 			}
 		})
 	}
