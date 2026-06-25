@@ -1,0 +1,16 @@
+language: "ja-JP"
+tone_instructions: "丁寧な言葉遣いで、具体的な改善点を指摘してください。"
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  path_instructions:
+    - path: "**/*.go"
+      instructions: |
+        Go公式のドキュメントに従い、コードの可読性を向上させてください。
+        命名規則、型安全性、エラーハンドリングに注意してください。
+  auto_review:
+    enabled: true
+    drafts: true
+chat:
+  auto_reply: true
