@@ -161,7 +161,7 @@ func TestSignUpValidate(t *testing.T) {
 				Password: tc.password,
 			}
 			v := NewUserValidator()
-			
+
 			err := v.SignUpValidate(context.Background(), input)
 			if tc.hasError {
 				if err == nil {
@@ -176,7 +176,106 @@ func TestSignUpValidate(t *testing.T) {
 					t.Errorf("expect err is nil; but got %v", err)
 				}
 			}
-			
+
+		})
+	}
+}
+
+func TestLoginValidate(t *testing.T) {
+	tests := []struct {
+		testName string
+		hasError bool
+		expected string
+		email    string
+		password string
+	}{
+		{
+			testName: "emailRequired",
+			hasError: true,
+			expected: "Email: email is required.",
+			email:    "",
+			password: "password",
+		},
+		{
+			testName: "emailMaxChars",
+			hasError: false,
+			expected: "",
+			email:    strings.Repeat("a", 38) + "@example.com",
+			password: "password",
+		},
+		{
+			testName: "emailOverChars",
+			hasError: true,
+			expected: "Email: limited max 50 char.",
+			email:    strings.Repeat("a", 39) + "@example.com",
+			password: "password",
+		},
+		{
+			testName: "emailInvalidFormat",
+			hasError: true,
+			expected: "Email: is not valid email format.",
+			email:    "test",
+			password: "password",
+		},
+		{
+			testName: "passwordRequired",
+			hasError: true,
+			expected: "Password: password is required.",
+			email:    "test@example.com",
+			password: "",
+		},
+		{
+			testName: "passwordBelowMinChars",
+			hasError: true,
+			expected: "Password: limited min 6 max 30 char.",
+			email:    "test@example.com",
+			password: "Abcd1",
+		},
+		{
+			testName: "passwordMinChars",
+			hasError: false,
+			expected: "",
+			email:    "test@example.com",
+			password: "Abcde1",
+		},
+		{
+			testName: "passwordMaxChars",
+			hasError: false,
+			expected: "",
+			email:    "test@example.com",
+			password: strings.Repeat("a", 30),
+		},
+		{
+			testName: "passwordOverChars",
+			hasError: true,
+			expected: "Password: limited min 6 max 30 char.",
+			email:    "test@example.com",
+			password: strings.Repeat("a", 31),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			input := LoginInput{
+				Email:    tc.email,
+				Password: tc.password,
+			}
+			v := NewUserValidator()
+
+			err := v.LoginValidate(context.Background(), input)
+			if tc.hasError {
+				if err == nil {
+					t.Errorf("expect err is not nil: but got nil")
+					return
+				}
+				if err.Error() != tc.expected {
+					t.Errorf("expect err is %v; but got %v", tc.expected, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expect err is nil; but got %v", err)
+				}
+			}
 		})
 	}
 }
