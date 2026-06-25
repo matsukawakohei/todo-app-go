@@ -133,6 +133,7 @@ func TestLogin(t *testing.T) {
 		repoUser    *domain.User
 		repoErr     error
 		wantErr     bool
+		wantErrIs   error
 	}{
 		{
 			testName: "success",
@@ -153,6 +154,7 @@ func TestLogin(t *testing.T) {
 			input:    LoginInput{Email: "notfound@example.com", Password: rawPassword},
 			repoErr:  domain.ErrNotFound,
 			wantErr:  true,
+			wantErrIs: domain.ErrInvalidCredentials,
 		},
 		{
 			testName: "passwordMismatch",
@@ -160,6 +162,7 @@ func TestLogin(t *testing.T) {
 			input:    LoginInput{Email: "test@example.com", Password: "WrongPass99"},
 			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
 			wantErr:  true,
+			wantErrIs: domain.ErrInvalidCredentials,
 		},
 		{
 			testName: "secretEmpty",
@@ -167,6 +170,7 @@ func TestLogin(t *testing.T) {
 			input:    LoginInput{Email: "test@example.com", Password: rawPassword},
 			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
 			wantErr:  true,
+			wantErrIs: domain.ErrUnexpected,
 		},
 	}
 
@@ -197,6 +201,9 @@ func TestLogin(t *testing.T) {
 			if tc.wantErr {
 				if err == nil {
 					t.Errorf("expected error but got nil")
+				}
+				if tc.wantErrIs != nil && !errors.Is(err, tc.wantErrIs) {
+					t.Errorf("expected error %v; but got %v", tc.wantErrIs, err)
 				}
 				return
 			}
