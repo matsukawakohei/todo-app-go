@@ -8,14 +8,14 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type IUserValidator interface {
+type UserValidator interface {
 	SignUpValidate(ctx context.Context, input SignUpInput) error
 	LoginValidate(ctx context.Context, input LoginInput) error
 }
 
 type userValidator struct{}
 
-func NewUserValidator() IUserValidator {
+func NewUserValidator() UserValidator {
 	return &userValidator{}
 }
 

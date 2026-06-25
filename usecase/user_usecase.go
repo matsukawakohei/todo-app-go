@@ -34,17 +34,17 @@ type LoginInput struct {
 	Password string
 }
 
-type IUserUsecase interface {
+type UserUsecase interface {
 	SignUp(ctx context.Context, input SignUpInput) (SignUpOutput, error)
 	Login(ctx context.Context, input LoginInput) (string, error)
 }
 
 type userUsecase struct {
-	ur domain.IUserRepository
-	uv IUserValidator
+	ur domain.UserRepository
+	uv UserValidator
 }
 
-func NewUserUsecase(ur domain.IUserRepository, uv IUserValidator) IUserUsecase {
+func NewUserUsecase(ur domain.UserRepository, uv UserValidator) UserUsecase {
 	return &userUsecase{ur, uv}
 }
 
