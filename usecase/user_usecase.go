@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -77,12 +78,15 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 
 	user, err := uu.ur.GetUserByEmail(ctx, input.Email)
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return "", domain.ErrInvalidCredentials
+		}
 		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
-		return "", err
+		return "", domain.ErrInvalidCredentials
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -97,7 +101,8 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 	}
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
 	if err != nil {
-		return "", err
+		slog.Error(fmt.Sprintf("failed to sign jwt: %v", err))
+		return "", domain.ErrUnexpected
 	}
 
 	return tokenString, nil
