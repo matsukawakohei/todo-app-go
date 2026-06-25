@@ -60,7 +60,7 @@ func TestSignUp(t *testing.T) {
 		{
 			testName: "repositoryError",
 			input:    SignUpInput{Name: "テスト", Email: "test@example.com", Password: "Password1234"},
-			repoErr:  domain.ErrUnExpected,
+			repoErr:  domain.ErrUnexpected,
 			wantErr:  true,
 		},
 	}

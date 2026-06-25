@@ -56,7 +56,7 @@ func (uu *userUsecase) SignUp(ctx context.Context, input SignUpInput) (SignUpOut
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
 	if err != nil {
 		slog.With("request_id").Error(fmt.Sprintf("failed to hash password : %v", err))
-		return SignUpOutput{}, fmt.Errorf("failed to hash password : %w", domain.ErrUnExpected)
+		return SignUpOutput{}, fmt.Errorf("failed to hash password : %w", domain.ErrUnexpected)
 	}
 
 	newUser := domain.CreateUser{Name: input.Name, Email: input.Email, Password: string(hash)}
