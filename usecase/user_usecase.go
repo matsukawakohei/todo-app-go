@@ -50,12 +50,12 @@ func NewUserUsecase(ur domain.UserRepository, uv UserValidator) UserUsecase {
 
 func (uu *userUsecase) SignUp(ctx context.Context, input SignUpInput) (SignUpOutput, error) {
 	if err := uu.uv.SignUpValidate(ctx, input); err != nil {
-		slog.With("request_id").Error(fmt.Sprintf("failed validation : %v", err))
+		slog.Error(fmt.Sprintf("failed validation : %v", err))
 		return SignUpOutput{}, err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
 	if err != nil {
-		slog.With("request_id").Error(fmt.Sprintf("failed to hash password : %v", err))
+		slog.Error(fmt.Sprintf("failed to hash password : %v", err))
 		return SignUpOutput{}, fmt.Errorf("failed to hash password : %w", domain.ErrUnexpected)
 	}
 
@@ -92,7 +92,7 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 
 	secret := os.Getenv("SECRET")
 	if secret == "" {
-		slog.With("request_id").Error("SECRET is empty")
+		slog.Error("SECRET is empty")
 		return "", domain.ErrUnexpected
 	}
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
