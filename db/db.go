@@ -24,7 +24,7 @@ func NewDB() (*gorm.DB, error) {
 	if sslmode == "" {
 		sslmode = "require"
 	}
-	url := (&url.URL{
+	dns := (&url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")),
 		Host:     net.JoinHostPort(os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
@@ -32,7 +32,7 @@ func NewDB() (*gorm.DB, error) {
 		RawQuery: "sslmode=" + sslmode,
 	}).String()
 
-	db, err := gorm.Open(postgres.Open(url), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{
 		TranslateError: true,
 	})
 	if err != nil {
