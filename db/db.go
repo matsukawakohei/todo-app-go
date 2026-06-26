@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewDB() *gorm.DB {
+func NewDB() (*gorm.DB, error) {
 	if os.Getenv("GO_ENV") == "dev" {
 		err := godotenv.Load()
 		if err != nil {
@@ -27,15 +27,19 @@ func NewDB() *gorm.DB {
 
 	db, err := gorm.Open(postgres.Open(url), &gorm.Config{})
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return nil, err
 	}
 	fmt.Println("Connected")
 
-	return db
+	return db, nil
 }
 
 func CloseDB(db *gorm.DB) {
-	sqlDB, _ := db.DB()
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalln(err)
+	}
 	if err := sqlDB.Close(); err != nil {
 		log.Fatalln(err)
 	}
