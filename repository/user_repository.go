@@ -16,27 +16,27 @@ type userRepository struct {
 }
 
 type userModel struct {
-	ID uint `gorm:"primaryKey"`
-	Name string
-	Email string `gorm:"unique"`
-	Password string
+	ID        uint `gorm:"primaryKey"`
+	Name      string
+	Email     string `gorm:"unique"`
+	Password  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
 func (um *userModel) toEntity() *domain.User {
 	return &domain.User{
-		ID: um.ID,
-		Name: um.Name,
-		Email: um.Email,
-		Password: um.Password,
+		ID:        um.ID,
+		Name:      um.Name,
+		Email:     um.Email,
+		Password:  um.Password,
 		CreatedAt: um.CreatedAt,
 		UpdatedAt: um.UpdatedAt,
 	}
 }
 
 func NewUserRepository(db *gorm.DB) domain.UserRepository {
-	return &userRepository{ db }
+	return &userRepository{db}
 }
 
 func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
@@ -55,8 +55,8 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*do
 
 func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser) (*domain.User, error) {
 	userModel := userModel{
-		Name: user.Name,
-		Email: user.Email,
+		Name:     user.Name,
+		Email:    user.Email,
 		Password: user.Password,
 	}
 	if err := ur.db.Create(&userModel).Error; err != nil {

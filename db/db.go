@@ -30,7 +30,7 @@ func NewDB() *gorm.DB {
 		log.Fatalln(err)
 	}
 	fmt.Println("Connected")
-	
+
 	return db
 }
 
