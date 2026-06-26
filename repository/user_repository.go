@@ -42,7 +42,7 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*do
 	userModel := userModel{}
 	if err := ur.db.Where("email=?", email).First(&userModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			slog.Error("GetUserByEmail: user not found", "email", email, "error", err)
+			slog.Warn("GetUserByEmail: user not found", "error", err)
 			return nil, domain.ErrNotFound
 		}
 		slog.Error("GetUserByEmail: unexpected error", "error", err)
@@ -59,10 +59,10 @@ func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser
 		Password: user.Password,
 	}
 	if err := ur.db.Create(&userModel).Error; err != nil {
-		slog.Error("CreateUser: failed to create user", "error", err)
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return nil, domain.ErrDuplicatedKey
 		}
+		slog.Error("CreateUser: failed to create user", "error", err)
 		return nil, domain.ErrUnexpected
 	}
 
