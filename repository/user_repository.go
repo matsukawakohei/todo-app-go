@@ -60,6 +60,9 @@ func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser
 	}
 	if err := ur.db.Create(&userModel).Error; err != nil {
 		slog.Error("CreateUser: failed to create user", "error", err)
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, domain.ErrDuplicatedKey
+		}
 		return nil, domain.ErrUnexpected
 	}
 

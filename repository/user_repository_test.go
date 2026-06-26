@@ -16,7 +16,9 @@ var testDB *gorm.DB
 
 func TestMain(m *testing.M) {
 	dsn := "postgres://todo:todo@localhost:5432/todo_test?sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to connect to test DB: %v\n", err)
 		os.Exit(1)
@@ -145,7 +147,7 @@ func TestCreateUser(t *testing.T) {
 				Password: "hashedpassword",
 			},
 			wantErr:   true,
-			wantErrIs: domain.ErrUnexpected,
+			wantErrIs: domain.ErrDuplicatedKey,
 		},
 	}
 
