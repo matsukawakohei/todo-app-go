@@ -15,7 +15,7 @@ import (
 var testDB *gorm.DB
 
 func TestMain(m *testing.M) {
-	dsn := "postgres://todo:todo@localhost:5432/todo_test"
+	dsn := "postgres://todo:todo@localhost:5432/todo_test?sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to connect to test DB: %v\n", err)

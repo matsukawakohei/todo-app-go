@@ -18,7 +18,7 @@ func NewDB() (*gorm.DB, error) {
 		}
 	}
 
-	url := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+	url := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_HOST"),
