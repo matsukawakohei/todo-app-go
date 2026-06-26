@@ -3,6 +3,8 @@ package db
 import (
 	"fmt"
 	"log"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -14,16 +16,17 @@ func NewDB() (*gorm.DB, error) {
 	if os.Getenv("GO_ENV") == "dev" {
 		err := godotenv.Load()
 		if err != nil {
-			log.Fatalln(err)
+			return nil, err
 		}
 	}
 
-	url := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"))
+	url := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")),
+		Host:     net.JoinHostPort(os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
+		Path:     os.Getenv("DB_NAME"),
+		RawQuery: "sslmode=disable",
+	}).String()
 
 	db, err := gorm.Open(postgres.Open(url), &gorm.Config{
 		TranslateError: true,
