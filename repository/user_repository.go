@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -43,10 +42,10 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*do
 	userModel := userModel{}
 	if err := ur.db.Where("email=?", email).First(&userModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			slog.Error("GetUserByEmail: user not found", email, err)
+			slog.Error("GetUserByEmail: user not found", "email", email, "error", err)
 			return nil, domain.ErrNotFound
 		}
-		slog.Error(fmt.Sprintf("GetUserByEmail: unexpected error: %v", err))
+		slog.Error("GetUserByEmail: unexpected error", "error", err)
 		return nil, domain.ErrUnexpected
 	}
 
@@ -60,7 +59,7 @@ func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser
 		Password: user.Password,
 	}
 	if err := ur.db.Create(&userModel).Error; err != nil {
-		slog.Error(fmt.Sprintf("CreateUser: failed to create user %v", err))
+		slog.Error("CreateUser: failed to create user", "error", err)
 		return nil, domain.ErrUnexpected
 	}
 
