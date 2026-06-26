@@ -1,1 +1,1 @@
-CREATE DATABASE "todo-test" OWNER todo
+CREATE DATABASE todo_test OWNER todo;
