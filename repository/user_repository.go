@@ -40,7 +40,7 @@ func NewUserRepository(db *gorm.DB) domain.UserRepository {
 
 func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	userModel := userModel{}
-	if err := ur.db.Where("email=?", email).First(&userModel).Error; err != nil {
+	if err := ur.db.WithContext(ctx).Where("email=?", email).First(&userModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			slog.Warn("GetUserByEmail: user not found", "error", err)
 			return nil, domain.ErrNotFound
@@ -58,7 +58,7 @@ func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser
 		Email:    user.Email,
 		Password: user.Password,
 	}
-	if err := ur.db.Create(&userModel).Error; err != nil {
+	if err := ur.db.WithContext(ctx).Create(&userModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return nil, domain.ErrDuplicatedKey
 		}
