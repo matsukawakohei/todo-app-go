@@ -33,5 +33,6 @@ func main() {
 	}
 	if err := e.Start(fmt.Sprintf(":%s", port)); err != nil {
 		e.Logger.Error("failed to start server", "error", err)
+		os.Exit(1)
 	}
 }
