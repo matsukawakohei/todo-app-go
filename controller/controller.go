@@ -18,5 +18,9 @@ func buildResponseError(c *echo.Context, err error) error {
 	if errors.Is(err, domain.ErrUnexpected) {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
+	if errors.Is(err, domain.ErrInvalidCredentials) {
+		return c.JSON(http.StatusUnauthorized, err.Error())
+	}
+	
 	return c.JSON(http.StatusBadRequest, err.Error())
 }

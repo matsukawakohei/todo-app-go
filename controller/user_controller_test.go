@@ -138,7 +138,7 @@ func TestLogin(t *testing.T) {
 			loginFn: func(_ context.Context, _ usecase.LoginInput) (string, error) {
 				return "", domain.ErrInvalidCredentials
 			},
-			wantStatus: http.StatusBadRequest,
+			wantStatus: http.StatusUnauthorized,
 		},
 		{
 			testName: "usecaseErrUnexpected",
