@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -21,8 +20,8 @@ type SignUpInput struct {
 }
 
 type SignUpOutput struct {
-	ID    uint
-	Email string
+	ID    uint `json:"id"`
+	Email string `json:"email"`
 }
 
 func (suo *SignUpOutput) FromUser(user *domain.User) {
@@ -31,8 +30,8 @@ func (suo *SignUpOutput) FromUser(user *domain.User) {
 }
 
 type LoginInput struct {
-	Email    string
-	Password string
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type UserUsecase interface {
@@ -51,13 +50,13 @@ func NewUserUsecase(ur domain.UserRepository, uv UserValidator) UserUsecase {
 
 func (uu *userUsecase) SignUp(ctx context.Context, input SignUpInput) (SignUpOutput, error) {
 	if err := uu.uv.SignUpValidate(ctx, input); err != nil {
-		slog.Error(fmt.Sprintf("failed validation : %v", err))
+		slog.ErrorContext(ctx, "failed validation", "error", err)
 		return SignUpOutput{}, err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to hash password : %v", err))
-		return SignUpOutput{}, fmt.Errorf("failed to hash password : %w", domain.ErrUnexpected)
+		slog.ErrorContext(ctx, "failed to hash password", "error", err)
+		return SignUpOutput{}, domain.ErrUnexpected
 	}
 
 	newUser := domain.CreateUser{Name: input.Name, Email: input.Email, Password: string(hash)}
@@ -96,12 +95,12 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 
 	secret := os.Getenv("SECRET")
 	if secret == "" {
-		slog.Error("SECRET is empty")
+		slog.ErrorContext(ctx, "SECRET is empty")
 		return "", domain.ErrUnexpected
 	}
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to sign jwt: %v", err))
+		slog.ErrorContext(ctx, "failed to sign jwt", "error", err)
 		return "", domain.ErrUnexpected
 	}
 
