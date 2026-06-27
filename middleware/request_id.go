@@ -8,10 +8,12 @@ import (
 
 type requestIDKey struct{}
 
+// WithRequestID はEchoのRequestIDを格納したContextを返す
 func WithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, id)
 }
 
+// RequestIDFromCtx はContextからEchoのRequestIDを取得して返却する
 func RequestIDFromCtx(ctx context.Context) string {
 	if id, ok := ctx.Value(requestIDKey{}).(string); ok {
 		return id
