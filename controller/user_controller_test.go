@@ -88,7 +88,10 @@ func TestSignUp(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			c, rec := newTestContext(http.MethodPost, tc.body)
 			uc := NewUserController(&mockUserUsecase{signUpFn: tc.signUpFn})
-			uc.SignUp(c)
+			err := uc.SignUp(c)
+			if err != nil {
+				t.Fatalf("user controller SignUp faild: %v", err)
+			}
 
 			if rec.Code != tc.wantStatus {
 				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
@@ -154,7 +157,10 @@ func TestLogin(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			c, rec := newTestContext(http.MethodPost, tc.body)
 			uc := NewUserController(&mockUserUsecase{loginFn: tc.loginFn})
-			uc.Login(c)
+			err := uc.Login(c)
+			if err != nil {
+				t.Fatalf("user controller Login faild: %v", err)
+			}
 
 			if rec.Code != tc.wantStatus {
 				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
@@ -181,7 +187,10 @@ func TestLogin(t *testing.T) {
 func TestLogout(t *testing.T) {
 	c, rec := newTestContext(http.MethodPost, "")
 	uc := NewUserController(&mockUserUsecase{})
-	uc.Logout(c)
+	err := uc.Logout(c)
+	if err != nil {
+		t.Fatalf("user controller Logout faild: %v", err)
+	}
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("expected status %d; got %d", http.StatusOK, rec.Code)
