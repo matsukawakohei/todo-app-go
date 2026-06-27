@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v5"
 	"github.com/matsukawakohei/todo-app-go/domain"
@@ -23,4 +24,8 @@ func buildResponseError(c *echo.Context, err error) error {
 	}
 	
 	return c.JSON(http.StatusBadRequest, err.Error())
+}
+
+func cookieSecure() bool {
+	return os.Getenv("GO_ENV") != "dev"
 }

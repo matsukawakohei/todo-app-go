@@ -53,6 +53,8 @@ func (uc *userController) Login(c *echo.Context) error {
 	cookie.Expires = time.Now().Add(time.Hour * 24)
 	cookie.Path = "/"
 	cookie.HttpOnly = true
+	cookie.Secure = cookieSecure()
+	cookie.SameSite = http.SameSiteLaxMode
 	c.SetCookie(cookie)
 
 	return c.NoContent(http.StatusOK)
@@ -65,6 +67,9 @@ func (uc *userController) Logout(c *echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.Path = "/"
 	cookie.HttpOnly = true
+	cookie.Secure = cookieSecure()
+	cookie.SameSite = http.SameSiteLaxMode
+	cookie.MaxAge = -1
 	c.SetCookie(cookie)
 
 	return c.NoContent(http.StatusOK)
