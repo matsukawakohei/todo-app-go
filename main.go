@@ -31,7 +31,7 @@ func main() {
 	userController := controller.NewUserController(userUsecase)
 
 	e := router.NewRouter(userController, frontURL)
-	
+
 	port := os.Getenv("API_PORT")
 	if port == "" {
 		port = "8080"

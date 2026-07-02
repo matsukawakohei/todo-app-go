@@ -20,7 +20,7 @@ type SignUpInput struct {
 }
 
 type SignUpOutput struct {
-	ID    uint `json:"id"`
+	ID    uint   `json:"id"`
 	Email string `json:"email"`
 }
 
