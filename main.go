@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	slog.SetDefault(slog.New(middleware.NewContextSlogHandler(slog.Default().Handler())))
+	slog.SetDefault(slog.New(middleware.NewContextSlogHandler(slog.NewJSONHandler(os.Stdout, nil))))
 	db, err := db.NewDB()
 	if err != nil {
 		log.Fatalln(err)
