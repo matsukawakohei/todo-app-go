@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/url"
 	"os"
 
 	"github.com/matsukawakohei/todo-app-go/controller"
@@ -22,7 +23,17 @@ func main() {
 	}
 	frontURL := os.Getenv("FE_URL")
 	if frontURL == "" {
-		log.Fatalln("FE_URL is empty")
+		slog.Error("FE_URL is empty", "frontURL", frontURL)
+		os.Exit(1)
+	}
+	u, err := url.Parse(frontURL)
+	if err != nil {
+		slog.Error("FE_URL is not URL format", "error", err)
+		os.Exit(1)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		slog.Error("FE_URL invalid value", "value", u)
+		os.Exit(1)
 	}
 
 	userRepository := repository.NewUserRepository(db)
