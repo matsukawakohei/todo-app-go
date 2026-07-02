@@ -20,12 +20,17 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	frontURL := os.Getenv("FE_URL")
+	if frontURL == "" {
+		log.Fatalln("FE_URL is empty")
+	}
+
 	userRepository := repository.NewUserRepository(db)
 	userValidator := usecase.NewUserValidator()
 	userUsecase := usecase.NewUserUsecase(userRepository, userValidator)
 	userController := controller.NewUserController(userUsecase)
 
-	e := router.NewRouter(userController)
+	e := router.NewRouter(userController, frontURL)
 	
 	port := os.Getenv("API_PORT")
 	if port == "" {

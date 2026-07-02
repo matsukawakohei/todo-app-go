@@ -7,14 +7,23 @@ import (
 	"github.com/matsukawakohei/todo-app-go/middleware"
 )
 
-func NewRouter(uc controller.UserController) *echo.Echo {
+func NewRouter(uc controller.UserController, frontURL string) *echo.Echo {
 	e := echo.New()
 	e.Use(echoMiddleware.RequestID())
 	e.Use(middleware.RequestIDToContext())
 
 	// TODO CSRF
 
-	// TODO CORS
+	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
+		AllowOrigins: []string{frontURL},
+		AllowHeaders: []string{
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderXCSRFToken,
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowCredentials: true,
+	}))
 
 	api := e.Group("/api")
 	v1 := api.Group("/v1")
