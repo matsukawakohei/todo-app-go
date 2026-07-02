@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	echoMiddleware "github.com/labstack/echo/v5/middleware"
 	"github.com/matsukawakohei/todo-app-go/controller"
@@ -12,8 +14,6 @@ func NewRouter(uc controller.UserController, frontURL string) *echo.Echo {
 	e.Use(echoMiddleware.RequestID())
 	e.Use(middleware.RequestIDToContext())
 
-	// TODO CSRF
-
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
 		AllowOrigins: []string{frontURL},
 		AllowHeaders: []string{
@@ -23,6 +23,12 @@ func NewRouter(uc controller.UserController, frontURL string) *echo.Echo {
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowCredentials: true,
+	}))
+
+	e.Use(echoMiddleware.CSRFWithConfig(echoMiddleware.CSRFConfig{
+		TrustedOrigins: []string{frontURL},
+		CookieSameSite: http.SameSiteLaxMode,
+		CookieSecure:   controller.CookieSecure(),
 	}))
 
 	api := e.Group("/api")
