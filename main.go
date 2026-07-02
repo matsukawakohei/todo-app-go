@@ -31,8 +31,8 @@ func main() {
 		slog.Error("FE_URL is not URL format", "error", err)
 		os.Exit(1)
 	}
-	if u.Scheme == "" || u.Host == "" {
-		slog.Error("FE_URL invalid value", "value", u)
+	if u.Scheme == "" || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		slog.Error("FE_URL invalid value", "value", frontURL)
 		os.Exit(1)
 	}
 
