@@ -1,3 +1,5 @@
+.PHONY: db-up db-stop db-remove create-migration migrate migrate-rollback migrate-goto test test-detail
+
 %:
 	@:
 
