@@ -34,6 +34,10 @@ func (um *userModel) toEntity() *domain.User {
 	}
 }
 
+func (um *userModel) TableName() string {
+	return "users"
+}
+
 func NewUserRepository(db *gorm.DB) domain.UserRepository {
 	return &userRepository{db}
 }

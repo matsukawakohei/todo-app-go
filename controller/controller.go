@@ -22,10 +22,12 @@ func buildResponseError(c *echo.Context, err error) error {
 	if errors.Is(err, domain.ErrInvalidCredentials) {
 		return c.JSON(http.StatusUnauthorized, err.Error())
 	}
-	
+
 	return c.JSON(http.StatusBadRequest, err.Error())
 }
 
-func cookieSecure() bool {
+// CookieSecureは環境変数から実行環境を読み取りCookieのSecure属性を返します
+// 環境変数GO_ENVの値がdevの場合にfalseを返し、それ以外はtrueを返します
+func CookieSecure() bool {
 	return os.Getenv("GO_ENV") != "dev"
 }
