@@ -15,10 +15,10 @@ db-remove:
 	docker compose down -v
 
 create-migration:
-	ifeq ($(word 2, $(MAKECMDGOALS)),)
-		$(error マイグレーションファイル名を指定してください。例: make create-migration add_users_table)
-		
-	endif
+ifeq ($(word 2, $(MAKECMDGOALS)),)
+	$(error マイグレーションファイル名を指定してください。例: make create-migration add_users_table)
+	
+endif
 	migrate create -ext sql -dir migration $(word 2, $(MAKECMDGOALS))
 
 migrate:
@@ -28,9 +28,9 @@ migrate-rollback:
 	migrate -source file://migration -database "$(DB_URL)" down 1
 
 migrate-goto:
-	ifeq ($(word 2, $(MAKECMDGOALS)),)
-		$(error マイグレーションのバージョンを指定してください。例: make migrate-goto 20260625170155)
-	endif
+ifeq ($(word 2, $(MAKECMDGOALS)),)
+	$(error マイグレーションのバージョンを指定してください。例: make migrate-goto 20260625170155)
+endif
 	migrate -source file://migration -database "$(DB_URL)" goto $(word 2, $(MAKECMDGOALS))
 
 test:
