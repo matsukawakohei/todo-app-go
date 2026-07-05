@@ -14,7 +14,6 @@ type labelModel struct {
 	ID        uint      `gorm:"primaryKey"`
 	Name      string    `gorm:"uniqueIndex:idx_labels_user_id"`
 	UserID    uint      `gorm:"uniqueIndex:idx_labels_user_id"`
-	User      userModel `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
