@@ -61,9 +61,19 @@ func run(m *testing.M) int {
 	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
 	defer func() {
-		sqlDB, _ := testDB.DB()
-		sqlDB.Close()
+		sqlDB, err := testDB.DB()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		if err := sqlDB.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}()
 	testDB = gormDB
 
