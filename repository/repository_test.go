@@ -3,6 +3,8 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"testing"
 
@@ -20,7 +22,17 @@ func TestMain(m *testing.M) {
 }
 
 func run(m *testing.M) int {
-	dsn := "postgres://todo:todo@localhost:5432/todo_test?sslmode=disable"
+	dsn := os.Getenv("TEST_DB_URL")
+	if dsn == "" {
+		fmt.Fprintln(os.Stderr, "TEST_DB_URL environment variable is not set")
+		os.Exit(1)
+	}
+
+	if err := validateTestDBURL(dsn); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -55,6 +67,27 @@ func run(m *testing.M) int {
 	testDB = gormDB
 
 	return m.Run()
+}
+
+func validateTestDBURL(dsn string) error {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return fmt.Errorf("TEST_DB_URL is not a valid URL: %w", err)
+	}
+
+	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+		return fmt.Errorf("TEST_DB_URL must use the postgres:// scheme, got %q", u.Scheme)
+	}
+
+	host, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return fmt.Errorf("TEST_DB_URL host %q is not a valid host:port: %w", u.Host, err)
+	}
+	if host == "" || port == "" {
+		return fmt.Errorf("TEST_DB_URL host %q must include both a host and a port", u.Host)
+	}
+
+	return nil
 }
 
 func runInTx(t *testing.T, fn func(tx *gorm.DB)) {
