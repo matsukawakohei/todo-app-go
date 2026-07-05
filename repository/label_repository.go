@@ -28,7 +28,7 @@ func (lm *labelModel) toEntity() *domain.Label {
 	}
 }
 
-func (ml labelModel) TableName() string {
+func (lm labelModel) TableName() string {
 	return "labels"
 }
 
