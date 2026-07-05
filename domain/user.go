@@ -2,6 +2,8 @@ package domain
 
 import "time"
 
+type UserID uint
+
 type User struct {
 	ID        uint
 	Name      string
