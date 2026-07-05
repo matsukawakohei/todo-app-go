@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -48,7 +49,7 @@ func run(m *testing.M) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := migrator.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
