@@ -25,32 +25,32 @@ func run(m *testing.M) int {
 	dsn := os.Getenv("TEST_DB_URL")
 	if dsn == "" {
 		fmt.Fprintln(os.Stderr, "TEST_DB_URL environment variable is not set")
-		os.Exit(1)
+		return 1
 	}
 
 	if err := validateTestDBURL(dsn); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 	driver, err := migratePostgres.WithInstance(db, &migratePostgres.Config{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 	migrator, err := migrate.NewWithDatabaseInstance("file://../migration", "postgres", driver)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 	defer func() {
 		migrator.Down()
