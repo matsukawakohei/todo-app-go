@@ -1,6 +1,7 @@
 .PHONY: db-up db-stop db-remove create-migration migrate migrate-rollback migrate-goto test test-detail
 
 DB_URL := postgres://todo:todo@localhost:5432/todo?sslmode=disable
+TEST_DB_URL := postgres://todo:todo@localhost:5432/todo_test?sslmode=disable
 
 %:
 	@:
@@ -34,7 +35,7 @@ endif
 	migrate -source file://migration -database "$(DB_URL)" goto $(word 2, $(MAKECMDGOALS))
 
 test:
-	go test ./...
+	TEST_DB_URL=$(TEST_DB_URL) go test ./... -count=1
 
 test-detail:
-	go test -v ./...
+	TEST_DB_URL=$(TEST_DB_URL) go test -v ./... -count=1
