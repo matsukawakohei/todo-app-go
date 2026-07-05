@@ -56,7 +56,6 @@ func run(m *testing.M) int {
 	defer func() {
 		if err := migrator.Down(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return
 		}
 		if err := db.Close(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
