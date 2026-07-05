@@ -54,8 +54,13 @@ func run(m *testing.M) int {
 		return 1
 	}
 	defer func() {
-		migrator.Down()
-		db.Close()
+		if err := migrator.Down(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		if err := db.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}()
 
 	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
