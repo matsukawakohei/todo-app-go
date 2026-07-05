@@ -40,23 +40,28 @@ func NewLabelRepository(db *gorm.DB) domain.LabelRepository {
 	return &labelRepository{db}
 }
 
-func (lr *labelRepository) GetAllByUserID(ctx context.Context, userID domain.UserID) ([]domain.Label, error) {
-	var labels []domain.Label
-	if result := lr.db.WithContext(ctx).Where("user_id = ?", userID).Order("id desc").Find(&labels); result.Error != nil {
+func (lr *labelRepository) GetAllByUserID(ctx context.Context, userID domain.UserID) ([]*domain.Label, error) {
+	var models []labelModel
+	if result := lr.db.WithContext(ctx).Where("user_id = ?", userID).Order("id desc").Find(&models); result.Error != nil {
 		slog.ErrorContext(ctx, "GetAllByUserID: unexpected error", "error", result.Error)
-		return []domain.Label{}, domain.ErrUnexpected
+		return []*domain.Label{}, domain.ErrUnexpected
+	}
+
+	var labels []*domain.Label
+	for _, l := range models {
+		labels = append(labels, l.toEntity())
 	}
 
 	return labels, nil
 }
 
 func (lr *labelRepository) CreateLabel(ctx context.Context, userID domain.UserID, label domain.CreateLabel) (*domain.Label, error) {
-	labelModel := labelModel{
+	model := labelModel{
 		Name:   label.Name,
 		UserID: uint(userID),
 	}
 
-	if err := lr.db.WithContext(ctx).Create(&labelModel).Error; err != nil {
+	if err := lr.db.WithContext(ctx).Create(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return nil, domain.ErrDuplicatedKey
 		}
@@ -64,7 +69,7 @@ func (lr *labelRepository) CreateLabel(ctx context.Context, userID domain.UserID
 		return nil, domain.ErrUnexpected
 	}
 
-	return labelModel.toEntity(), nil
+	return model.toEntity(), nil
 }
 
 func (lr *labelRepository) DeleteLabel(ctx context.Context, userID domain.UserID, labelID domain.LabelID) error {
