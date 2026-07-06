@@ -8,12 +8,15 @@ import (
 
 	"github.com/matsukawakohei/todo-app-go/domain"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
+const MaxLabelCount = 100
+
 type labelModel struct {
-	ID        uint      `gorm:"primaryKey"`
-	Name      string    `gorm:"uniqueIndex:idx_labels_user_id"`
-	UserID    uint      `gorm:"uniqueIndex:idx_labels_user_id"`
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"uniqueIndex:idx_labels_user_id"`
+	UserID    uint   `gorm:"uniqueIndex:idx_labels_user_id"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -60,12 +63,35 @@ func (lr *labelRepository) CreateLabel(ctx context.Context, userID domain.UserID
 		UserID: uint(userID),
 	}
 
-	if err := lr.db.WithContext(ctx).Create(&model).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return nil, domain.ErrDuplicatedKey
+	err := lr.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).First(&userModel{}, userID).Error; err != nil {
+			slog.ErrorContext(ctx, "CreateLabel: failed lock user", "error", err, "userID", userID)
+			return domain.ErrUnexpected
 		}
-		slog.ErrorContext(ctx, "CreateLabel: unexpected error", "error", err)
-		return nil, domain.ErrUnexpected
+		var labelCount int64
+		if err := tx.WithContext(ctx).Model(&labelModel{}).Where("user_id = ?", userID).Count(&labelCount).Error; err != nil {
+			slog.ErrorContext(ctx, "CreateLabel: failed count label", "error", err)
+			return domain.ErrUnexpected
+		}
+
+		if labelCount >= MaxLabelCount {
+			slog.WarnContext(ctx, "label count is limit", "userID", userID)
+			return domain.ErrLimitExceeded
+		}
+
+		if err := tx.WithContext(ctx).Create(&model).Error; err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return domain.ErrDuplicatedKey
+			}
+			slog.ErrorContext(ctx, "CreateLabel: unexpected error", "error", err)
+			return domain.ErrUnexpected
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return model.toEntity(), nil
