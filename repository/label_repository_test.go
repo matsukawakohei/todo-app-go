@@ -163,6 +163,16 @@ func TestCreateLabel(t *testing.T) {
 			userID:         1,
 			wantErr:        false,
 		},
+		{
+			testName: "userNotFound",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
+			labelName: "テスト",
+			userID:    2,
+			wantErr:   true,
+			wantErrIs: domain.ErrNotFound,
+		},
 	}
 
 	for _, tc := range tests {

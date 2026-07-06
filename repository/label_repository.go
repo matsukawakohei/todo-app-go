@@ -64,12 +64,16 @@ func (lr *labelRepository) CreateLabel(ctx context.Context, userID domain.UserID
 	}
 
 	err := lr.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).First(&userModel{}, userID).Error; err != nil {
+		tx = tx.WithContext(ctx)
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&userModel{}, userID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrNotFound
+			}
 			slog.ErrorContext(ctx, "CreateLabel: failed lock user", "error", err, "userID", userID)
 			return domain.ErrUnexpected
 		}
 		var labelCount int64
-		if err := tx.WithContext(ctx).Model(&labelModel{}).Where("user_id = ?", userID).Count(&labelCount).Error; err != nil {
+		if err := tx.Model(&labelModel{}).Where("user_id = ?", userID).Count(&labelCount).Error; err != nil {
 			slog.ErrorContext(ctx, "CreateLabel: failed count label", "error", err)
 			return domain.ErrUnexpected
 		}
@@ -79,7 +83,7 @@ func (lr *labelRepository) CreateLabel(ctx context.Context, userID domain.UserID
 			return domain.ErrLimitExceeded
 		}
 
-		if err := tx.WithContext(ctx).Create(&model).Error; err != nil {
+		if err := tx.Create(&model).Error; err != nil {
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
 				return domain.ErrDuplicatedKey
 			}
