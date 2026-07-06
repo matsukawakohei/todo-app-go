@@ -8,4 +8,5 @@ var (
 	ErrDuplicatedKey      = errors.New("duplicate unique key")
 	ErrNotFound           = errors.New("object not found")
 	ErrUnexpected         = errors.New("an unexpected error occurred")
+	ErrLimitExceeded      = errors.New("object limit exceeded")
 )

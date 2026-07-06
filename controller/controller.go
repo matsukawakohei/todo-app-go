@@ -22,6 +22,9 @@ func buildResponseError(c *echo.Context, err error) error {
 	if errors.Is(err, domain.ErrInvalidCredentials) {
 		return c.JSON(http.StatusUnauthorized, err.Error())
 	}
+	if errors.Is(err, domain.ErrLimitExceeded) {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
 
 	return c.JSON(http.StatusBadRequest, err.Error())
 }

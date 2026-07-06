@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/matsukawakohei/todo-app-go/domain"
@@ -98,41 +99,105 @@ func TestGetAllByUserID(t *testing.T) {
 
 func TestCreateLabel(t *testing.T) {
 	tests := []struct {
-		testName  string
-		seedUser  userModel
-		seedLabel *labelModel
-		labelName string
-		userID    uint
-		wantErr   bool
-		wantErrIs error
+		testName       string
+		seedUsers      []userModel
+		seedLabel      *labelModel
+		seedLabelCount int
+		labelName      string
+		userID         uint
+		wantErr        bool
+		wantErrIs      error
 	}{
 		{
-			testName:  "success",
-			seedUser:  userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			testName: "success",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
 			labelName: "テスト",
 			userID:    1,
 			wantErr:   false,
 		},
 		{
-			testName:  "duplicateKey",
-			seedUser:  userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			testName: "duplicateKey",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
 			seedLabel: &labelModel{Name: "テスト", UserID: 1},
 			labelName: "テスト",
 			userID:    1,
 			wantErr:   true,
 			wantErrIs: domain.ErrDuplicatedKey,
 		},
+		{
+			testName: "limitOver",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
+			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
+			seedLabelCount: MaxLabelCount,
+			labelName:      "テスト",
+			userID:         1,
+			wantErr:        true,
+			wantErrIs:      domain.ErrLimitExceeded,
+		},
+		{
+			testName: "otherUserLimitOver",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test1@example.com"},
+				userModel{ID: 2, Name: "テスト", Email: "test2@example.com"},
+			},
+			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
+			seedLabelCount: MaxLabelCount,
+			labelName:      "テスト",
+			userID:         2,
+			wantErr:        false,
+		},
+		{
+			testName: "maxCreate",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
+			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
+			seedLabelCount: MaxLabelCount - 1,
+			labelName:      "テスト",
+			userID:         1,
+			wantErr:        false,
+		},
+		{
+			testName: "userNotFound",
+			seedUsers: []userModel{
+				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+			},
+			labelName: "テスト",
+			userID:    2,
+			wantErr:   true,
+			wantErrIs: domain.ErrNotFound,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
 			runInTx(t, func(tx *gorm.DB) {
-				if result := tx.Create(&tc.seedUser); result.Error != nil {
-					t.Fatalf("failed to seed user: %v", result.Error)
+				for _, seedUser := range tc.seedUsers {
+					if result := tx.Create(&seedUser); result.Error != nil {
+						t.Fatalf("failed to seed user: %v", result.Error)
+					}
 				}
 				if tc.seedLabel != nil {
-					if result := tx.Create(tc.seedLabel); result.Error != nil {
-						t.Fatalf("failed to seed label: %v", result.Error)
+					if tc.seedLabelCount > 0 {
+						for i := 0; i < tc.seedLabelCount; i++ {
+							model := labelModel{
+								Name:   tc.seedLabel.Name + "_" + strconv.Itoa(i),
+								UserID: tc.seedLabel.UserID,
+							}
+							if result := tx.Create(&model); result.Error != nil {
+								t.Fatalf("failed to seed label: %v", result.Error)
+							}
+						}
+					} else {
+						if result := tx.Create(tc.seedLabel); result.Error != nil {
+							t.Fatalf("failed to seed label: %v", result.Error)
+						}
 					}
 				}
 
