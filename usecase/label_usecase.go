@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/matsukawakohei/todo-app-go/domain"
 )
@@ -38,10 +39,11 @@ type LabelUsecase interface {
 
 type labelUsecase struct {
 	lr domain.LabelRepository
+	lv LabelValidator
 }
 
-func NewLabelUsecase(lr domain.LabelRepository) LabelUsecase {
-	return &labelUsecase{ lr }
+func NewLabelUsecase(lr domain.LabelRepository, lv LabelValidator) LabelUsecase {
+	return &labelUsecase{ lr, lv }
 }
 
 func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID) (*LabelGetAllOutput, error) {
@@ -50,7 +52,7 @@ func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID
 		return nil, err
 	}
 
-	var results []*Label
+	results := make([]*Label, 0, len(labels))
 	for _, l := range labels {
 		results = append(results, fromLabelEntity(l))
 	}
@@ -61,6 +63,10 @@ func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID
 }
 
 func (lu *labelUsecase) Create(ctx context.Context, userID domain.UserID, input LabelCreateInput) (*Label, error) {
+	if err := lu.lv.CreateValidate(ctx, input); err != nil {
+		slog.ErrorContext(ctx, "failed validation", "error", err)
+		return nil, err
+	}
 	entityInput := input.toEntityInput()
 	label, err := lu.lr.CreateLabel(ctx, userID, entityInput)
 	if err != nil {
