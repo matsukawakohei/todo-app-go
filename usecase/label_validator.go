@@ -10,7 +10,7 @@ type LabelValidator interface {
 	CreateValidate(ctx context.Context, input LabelCreateInput) error
 }
 
-type labelValidator struct {}
+type labelValidator struct{}
 
 func NewLabelValidator() LabelValidator {
 	return &labelValidator{}

@@ -8,19 +8,19 @@ import (
 )
 
 type Label struct {
-	ID uint
+	ID   uint
 	Name string
 }
 
 func fromLabelEntity(label *domain.Label) *Label {
 	return &Label{
-		ID: uint(label.ID),
+		ID:   uint(label.ID),
 		Name: label.Name,
 	}
 }
 
 type LabelGetAllOutput struct {
-	labels []*Label
+	Labels []*Label
 }
 
 type LabelCreateInput struct {
@@ -28,7 +28,7 @@ type LabelCreateInput struct {
 }
 
 func (lci *LabelCreateInput) toEntityInput() domain.CreateLabel {
-	return  domain.CreateLabel{Name: lci.Name}
+	return domain.CreateLabel{Name: lci.Name}
 }
 
 type LabelUsecase interface {
@@ -43,7 +43,7 @@ type labelUsecase struct {
 }
 
 func NewLabelUsecase(lr domain.LabelRepository, lv LabelValidator) LabelUsecase {
-	return &labelUsecase{ lr, lv }
+	return &labelUsecase{lr, lv}
 }
 
 func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID) (*LabelGetAllOutput, error) {
@@ -58,7 +58,7 @@ func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID
 	}
 
 	return &LabelGetAllOutput{
-		labels: results,
+		Labels: results,
 	}, nil
 }
 

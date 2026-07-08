@@ -100,13 +100,13 @@ func TestLabelGetAllByUserID(t *testing.T) {
 			if capturedUserID != tc.userID {
 				t.Errorf("expect userID passed to repository is %v; but got %v", tc.userID, capturedUserID)
 			}
-			if output.labels == nil {
+			if output.Labels == nil {
 				t.Errorf("expect labels is an empty slice, not nil, when there are no labels")
 			}
-			if len(output.labels) != tc.wantLen {
-				t.Fatalf("expect %d labels; but got %d", tc.wantLen, len(output.labels))
+			if len(output.Labels) != tc.wantLen {
+				t.Fatalf("expect %d labels; but got %d", tc.wantLen, len(output.Labels))
 			}
-			for i, l := range output.labels {
+			for i, l := range output.Labels {
 				if l.ID != uint(tc.repoLabels[i].ID) {
 					t.Errorf("expect label[%d].ID is %d; but got %d", i, tc.repoLabels[i].ID, l.ID)
 				}
