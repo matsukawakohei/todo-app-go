@@ -64,7 +64,7 @@ func (lu *labelUsecase) GetAllByUserID(ctx context.Context, userID domain.UserID
 
 func (lu *labelUsecase) Create(ctx context.Context, userID domain.UserID, input LabelCreateInput) (*Label, error) {
 	if err := lu.lv.CreateValidate(ctx, input); err != nil {
-		slog.ErrorContext(ctx, "failed validation", "error", err)
+		slog.WarnContext(ctx, "failed validation", "error", err)
 		return nil, err
 	}
 	entityInput := input.toEntityInput()
