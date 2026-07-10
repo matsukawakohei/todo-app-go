@@ -39,13 +39,23 @@ func main() {
 		slog.Error("FE_URL invalid value", "value", frontURL)
 		os.Exit(1)
 	}
+	secret := os.Getenv("SECRET")
+	if secret == "" {
+		slog.Error("SECRET is empty")
+		os.Exit(1)
+	}
 
 	userRepository := repository.NewUserRepository(db)
 	userValidator := usecase.NewUserValidator()
-	userUsecase := usecase.NewUserUsecase(userRepository, userValidator)
+	userUsecase := usecase.NewUserUsecase(userRepository, userValidator, secret)
 	userController := controller.NewUserController(userUsecase)
 
-	e := router.NewRouter(userController, frontURL)
+	labelRepository := repository.NewLabelRepository(db)
+	labelValidator := usecase.NewLabelValidator()
+	labelUsecase := usecase.NewLabelUsecase(labelRepository, labelValidator)
+	labelController := controller.NewLabelController(labelUsecase)
+
+	e := router.NewRouter(userController, labelController, frontURL, secret)
 
 	port := os.Getenv("API_PORT")
 	if port == "" {

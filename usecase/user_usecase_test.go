@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const test_secret = "test secret"
+
 type mockUserRepository struct {
 	createUserFn     func(ctx context.Context, user domain.CreateUser) (*domain.User, error)
 	getUserByEmailFn func(ctx context.Context, email string) (*domain.User, error)
@@ -88,7 +90,7 @@ func TestSignUp(t *testing.T) {
 				},
 			}
 
-			uu := NewUserUsecase(mockRepo, mockValidator)
+			uu := NewUserUsecase(mockRepo, mockValidator, test_secret)
 			output, err := uu.SignUp(context.Background(), tc.input)
 
 			if tc.wantErr {
@@ -164,19 +166,10 @@ func TestLogin(t *testing.T) {
 			wantErr:   true,
 			wantErrIs: domain.ErrInvalidCredentials,
 		},
-		{
-			testName:  "secretEmpty",
-			secret:    "",
-			input:     LoginInput{Email: "test@example.com", Password: rawPassword},
-			repoUser:  &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
-			wantErr:   true,
-			wantErrIs: domain.ErrUnexpected,
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			t.Setenv("SECRET", tc.secret)
 
 			mockRepo := &mockUserRepository{
 				createUserFn: func(ctx context.Context, user domain.CreateUser) (*domain.User, error) {
@@ -195,7 +188,7 @@ func TestLogin(t *testing.T) {
 				},
 			}
 
-			uu := NewUserUsecase(mockRepo, mockValidator)
+			uu := NewUserUsecase(mockRepo, mockValidator, tc.secret)
 			token, err := uu.Login(context.Background(), tc.input)
 
 			if tc.wantErr {
