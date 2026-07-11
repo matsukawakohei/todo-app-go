@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"net/http/httptest"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 
 func newTestContext(method, body string) (*echo.Context, *httptest.ResponseRecorder) {
 	e := echo.New()
-	req := httptest.NewRequest(method, "/", strings.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), method, "/", strings.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	return e.NewContext(req, rec), rec
