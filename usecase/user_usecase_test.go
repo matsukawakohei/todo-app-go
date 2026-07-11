@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const test_secret = "test secret"
+const testSecret = "test secret"
 
 type mockUserRepository struct {
 	createUserFn     func(ctx context.Context, user domain.CreateUser) (*domain.User, error)
@@ -90,7 +90,7 @@ func TestSignUp(t *testing.T) {
 				},
 			}
 
-			uu := NewUserUsecase(mockRepo, mockValidator, test_secret)
+			uu := NewUserUsecase(mockRepo, mockValidator, testSecret)
 			output, err := uu.SignUp(context.Background(), tc.input)
 
 			if tc.wantErr {
