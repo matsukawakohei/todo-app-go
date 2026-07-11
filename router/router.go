@@ -45,8 +45,8 @@ func NewRouter(uc controller.UserController, lc controller.LabelController, fron
 		SigningKey:  []byte(secret),
 		TokenLookup: "cookie:token",
 	}))
-	label.GET("/", lc.GetAllLabels)
-	label.POST("/", lc.CreateLabel)
+	label.GET("", lc.GetAllLabels)
+	label.POST("", lc.CreateLabel)
 	label.DELETE("/:id", lc.DeleteLabel)
 
 	return e
