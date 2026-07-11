@@ -58,6 +58,10 @@ func getLoginUserFromContext(c *echo.Context) (uint, error) {
 		slog.ErrorContext(c.Request().Context(), "Failed parse user_id to float64 from any")
 		return 0, domain.ErrUnexpected
 	}
+	if userID < 0 {
+		slog.ErrorContext(c.Request().Context(), "user_id claim is negative")
+		return 0, domain.ErrUnexpected
+	}
 
 	return uint(userID), nil
 }
