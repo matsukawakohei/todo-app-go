@@ -44,6 +44,10 @@ func main() {
 		slog.Error("SECRET is empty")
 		os.Exit(1)
 	}
+	if len(secret) < 32 {
+		slog.Error("SECRET is too short")
+		os.Exit(1)
+	}
 
 	userRepository := repository.NewUserRepository(db)
 	userValidator := usecase.NewUserValidator()
