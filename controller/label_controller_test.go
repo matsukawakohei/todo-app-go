@@ -237,6 +237,12 @@ func TestDeleteLabel(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 		},
 		{
+			testName:   "negativeLabelID",
+			loggedIn:   true,
+			labelIDStr: "-1",
+			wantStatus: http.StatusBadRequest,
+		},
+		{
 			testName:   "notFound",
 			loggedIn:   true,
 			labelIDStr: "1",

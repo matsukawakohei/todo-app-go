@@ -79,7 +79,7 @@ func (lc *labelController) DeleteLabel(c *echo.Context) error {
 
 func getLabelIDFromParam(c *echo.Context) (uint, error) {
 	labelIDString := c.Param("id")
-	labelID, err := strconv.Atoi(labelIDString)
+	labelID, err := strconv.ParseUint(labelIDString, 10, 64)
 	if err != nil {
 		slog.ErrorContext(c.Request().Context(), "Failed parse label_id to int from string", "error", err)
 		return 0, domain.ErrBadRequest
