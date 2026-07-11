@@ -6,6 +6,9 @@ TEST_DB_URL := postgres://todo:todo@localhost:5432/todo_test?sslmode=disable
 %:
 	@:
 
+app:
+	GO_ENV=dev go run main.go
+
 db-up:
 	docker compose up -d
 
