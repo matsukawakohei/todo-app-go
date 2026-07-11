@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/matsukawakohei/todo-app-go/domain"
@@ -40,12 +39,13 @@ type UserUsecase interface {
 }
 
 type userUsecase struct {
-	ur domain.UserRepository
-	uv UserValidator
+	ur     domain.UserRepository
+	uv     UserValidator
+	secret string
 }
 
-func NewUserUsecase(ur domain.UserRepository, uv UserValidator) UserUsecase {
-	return &userUsecase{ur, uv}
+func NewUserUsecase(ur domain.UserRepository, uv UserValidator, secret string) UserUsecase {
+	return &userUsecase{ur, uv, secret}
 }
 
 func (uu *userUsecase) SignUp(ctx context.Context, input SignUpInput) (SignUpOutput, error) {
@@ -93,12 +93,7 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (string, err
 		"exp":     time.Now().Add(time.Hour * 12).Unix(),
 	})
 
-	secret := os.Getenv("SECRET")
-	if secret == "" {
-		slog.ErrorContext(ctx, "SECRET is empty")
-		return "", domain.ErrUnexpected
-	}
-	tokenString, err := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(uu.secret))
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to sign jwt", "error", err)
 		return "", domain.ErrUnexpected

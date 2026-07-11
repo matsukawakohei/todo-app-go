@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/labstack/echo/v5"
 	"github.com/matsukawakohei/todo-app-go/domain"
 	"github.com/matsukawakohei/todo-app-go/usecase"
 )
@@ -24,14 +21,6 @@ func (m *mockUserUsecase) SignUp(ctx context.Context, input usecase.SignUpInput)
 
 func (m *mockUserUsecase) Login(ctx context.Context, input usecase.LoginInput) (string, error) {
 	return m.loginFn(ctx, input)
-}
-
-func newTestContext(method, body string) (*echo.Context, *httptest.ResponseRecorder) {
-	e := echo.New()
-	req := httptest.NewRequest(method, "/", strings.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	return e.NewContext(req, rec), rec
 }
 
 func TestSignUp(t *testing.T) {
