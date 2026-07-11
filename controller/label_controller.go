@@ -74,7 +74,7 @@ func (lc *labelController) DeleteLabel(c *echo.Context) error {
 		return buildResponseError(c, err)
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusNoContent)
 }
 
 func getLabelIDFromParam(c *echo.Context) (uint, error) {
