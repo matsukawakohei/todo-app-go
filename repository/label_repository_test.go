@@ -30,10 +30,10 @@ func TestGetAllByUserID(t *testing.T) {
 			testName: "OtherUserLabel",
 			seed:     true,
 			seedUsers: []userModel{
-				userModel{ID: 999, Name: "テスト", Email: "test@example.com"},
+				{ID: 999, Name: "テスト", Email: "test@example.com"},
 			},
 			seedLabels: []labelModel{
-				labelModel{Name: "テスト", UserID: 999},
+				{Name: "テスト", UserID: 999},
 			},
 			queryUserID: 1,
 			wantLabels:  []domain.Label{},
@@ -42,18 +42,18 @@ func TestGetAllByUserID(t *testing.T) {
 			testName: "MyLabel",
 			seed:     true,
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
-				userModel{ID: 999, Name: "テスト", Email: "test2@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 999, Name: "テスト", Email: "test2@example.com"},
 			},
 			seedLabels: []labelModel{
-				labelModel{ID: 1, Name: "テスト1", UserID: 1},
-				labelModel{ID: 2, Name: "テスト2", UserID: 1},
-				labelModel{ID: 3, Name: "テスト", UserID: 999},
+				{ID: 1, Name: "テスト1", UserID: 1},
+				{ID: 2, Name: "テスト2", UserID: 1},
+				{ID: 3, Name: "テスト", UserID: 999},
 			},
 			queryUserID: 1,
 			wantLabels: []domain.Label{
-				domain.Label{ID: 2, Name: "テスト2"},
-				domain.Label{ID: 1, Name: "テスト1"},
+				{ID: 2, Name: "テスト2"},
+				{ID: 1, Name: "テスト1"},
 			},
 		},
 	}
@@ -111,7 +111,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "success",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
 			labelName: "テスト",
 			userID:    1,
@@ -120,7 +120,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "duplicateKey",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
 			seedLabel: &labelModel{Name: "テスト", UserID: 1},
 			labelName: "テスト",
@@ -131,7 +131,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "limitOver",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
 			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
 			seedLabelCount: MaxLabelCount,
@@ -143,8 +143,8 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "otherUserLimitOver",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test1@example.com"},
-				userModel{ID: 2, Name: "テスト", Email: "test2@example.com"},
+				{ID: 1, Name: "テスト", Email: "test1@example.com"},
+				{ID: 2, Name: "テスト", Email: "test2@example.com"},
 			},
 			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
 			seedLabelCount: MaxLabelCount,
@@ -155,7 +155,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "maxCreate",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
 			seedLabel:      &labelModel{Name: "最大数テスト", UserID: 1},
 			seedLabelCount: MaxLabelCount - 1,
@@ -166,7 +166,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "userNotFound",
 			seedUsers: []userModel{
-				userModel{ID: 1, Name: "テスト", Email: "test@example.com"},
+				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
 			labelName: "テスト",
 			userID:    2,
