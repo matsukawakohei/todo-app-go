@@ -1,6 +1,6 @@
 module github.com/matsukawakohei/todo-app-go
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
