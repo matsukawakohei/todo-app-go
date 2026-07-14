@@ -44,13 +44,10 @@ test-detail:
 	TEST_DB_URL=$(TEST_DB_URL) go test -v ./... -count=1
 
 lint:
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v2.12.2 golangci-lint run
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint@sha256:5cceeef04e53efe1470638d4b4b4f5ceefd574955ab3941b2d9a68a8c9ad5240 golangci-lint run
 
-fmt:
-	gofmt -l .
-
-fmt-f:
-	gofmt -w .
+lint-fix:
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint@sha256:5cceeef04e53efe1470638d4b4b4f5ceefd574955ab3941b2d9a68a8c9ad5240 golangci-lint run --fix
 
 action-lint:
-	docker run --rm -v "$(shell pwd):$(shell pwd)" -w "$(shell pwd)" rhysd/actionlint:latest
+	docker run --rm -v "$(shell pwd):$(shell pwd)" -w "$(shell pwd)" rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
