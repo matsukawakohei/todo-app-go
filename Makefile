@@ -1,4 +1,4 @@
-.PHONY: db-up db-stop db-remove create-migration migrate migrate-rollback migrate-goto test test-detail
+.PHONY: db-up db-stop db-remove create-migration migrate migrate-rollback migrate-goto test test-detail action-lint lint fmt fmt-f
 
 DB_URL := postgres://todo:todo@localhost:5432/todo?sslmode=disable
 TEST_DB_URL := postgres://todo:todo@localhost:5432/todo_test?sslmode=disable
@@ -10,7 +10,7 @@ app:
 	GO_ENV=dev go run main.go
 
 db-up:
-	docker compose up -d
+	docker compose up -d --wait
 
 db-stop:
 	docker compose stop
@@ -42,3 +42,15 @@ test:
 
 test-detail:
 	TEST_DB_URL=$(TEST_DB_URL) go test -v ./... -count=1
+
+lint:
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v2.12.2 golangci-lint run
+
+fmt:
+	gofmt -l .
+
+fmt-f:
+	gofmt -w .
+
+action-lint:
+	docker run --rm -v "$(shell pwd):$(shell pwd)" -w "$(shell pwd)" rhysd/actionlint:latest
