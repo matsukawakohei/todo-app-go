@@ -1,6 +1,6 @@
 version: 2
 updates:
-  - package-echosystem: github-actions
+  - package-package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
