@@ -149,6 +149,12 @@ func TestGetAllTaskByUserID(t *testing.T) {
 					if task.ID != gotTask.ID {
 						t.Errorf("want task id %v; but got task id %v", task.ID, gotTask.ID)
 					}
+					if task.Title != gotTask.Title {
+						t.Errorf("want title %v; but got %v", task.Title, gotTask.Title)
+					}
+					if task.Completed != gotTask.Completed {
+						t.Errorf("want completed %v; but got %v", task.Completed, gotTask.Completed)
+					}
 					if len(task.Labels) != len(gotTask.Labels) {
 						t.Errorf("want task labels length %v; but got length %v", len(task.Labels), len(gotTask.Labels))
 					}
