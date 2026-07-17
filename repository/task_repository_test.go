@@ -713,6 +713,7 @@ func compareTask(t *testing.T, want, got *domain.Task, includeID bool) {
 		gotLabel, exists := gotLabelMap[wantLabel.ID]
 		if !exists {
 			t.Errorf("task label want exists id %v; but got not exists", wantLabel.ID)
+			continue
 		}
 		if gotLabel.Name != wantLabel.Name {
 			t.Errorf("want task label name want %v; but got %v", wantLabel.Name, gotLabel.Name)
