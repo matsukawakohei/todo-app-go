@@ -197,13 +197,13 @@ func (tr *taskRepository) DeleteTask(ctx context.Context, userID domain.UserID, 
 }
 
 func (tr *taskRepository) getLabelCount(ctx context.Context, db *gorm.DB, userID domain.UserID, labelIDs []domain.LabelID) (int64, error) {
-	var labelCount int64
-	if err := db.Model(&labelModel{}).Where("user_id = ? AND id IN ?", userID, labelIDs).Count(&labelCount).Error; err != nil {
+	var labels []labelModel
+	if err := db.Clauses(clause.Locking{Strength: "SHARE"}).Select("id").Where("user_id = ? and id in ?", userID, labelIDs).Find(&labels).Error; err != nil {
 		slog.ErrorContext(ctx, "get Label Count: failed get label by user_id and ids", "error", err)
 		return 0, domain.ErrUnexpected
 	}
 
-	return labelCount, nil
+	return int64(len(labels)), nil
 }
 
 func (tr *taskRepository) createTaskLabels(ctx context.Context, db *gorm.DB, userID domain.UserID, taskID uint, labelIDs []domain.LabelID) error {
