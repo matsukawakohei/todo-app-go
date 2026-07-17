@@ -507,8 +507,14 @@ func TestUpdateTask(t *testing.T) {
 					}
 					return
 				}
+				if err != nil {
+					t.Fatalf("want err is nil; but got %v", err)
+				}
 
 				compareTask(t, tc.wantTask, got, true)
+
+				storedTask := getTaskByID(t, tx, got.ID)
+				compareTask(t, tc.wantTask, storedTask, true)
 			})
 		})
 	}
