@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS uq_labels_id_user;

@@ -37,6 +37,12 @@ ifeq ($(word 2, $(MAKECMDGOALS)),)
 endif
 	migrate -source file://migration -database "$(DB_URL)" goto $(word 2, $(MAKECMDGOALS))
 
+migrate-force:
+ifeq ($(word 2, $(MAKECMDGOALS)),)
+	$(error マイグレーションのバージョンを指定してください。例: make migrate-force 20260625170155)
+endif
+	migrate -source file://migration -database "$(DB_URL)" force $(word 2, $(MAKECMDGOALS))
+
 test:
 	TEST_DB_URL=$(TEST_DB_URL) go test ./... -count=1
 

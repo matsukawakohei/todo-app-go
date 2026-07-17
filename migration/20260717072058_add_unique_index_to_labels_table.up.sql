@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX CONCURRENTLY uq_labels_id_user ON labels (id, user_id);
