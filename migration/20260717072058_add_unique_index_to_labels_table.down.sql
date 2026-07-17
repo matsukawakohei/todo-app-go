@@ -1,1 +1,1 @@
-ALTER TABLE labels DROP CONSTRAINT uq_labels_id_user;
+DROP INDEX CONCURRENTLY IF EXISTS uq_labels_id_user;
