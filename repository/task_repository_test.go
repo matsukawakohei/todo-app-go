@@ -15,7 +15,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 		seedUsers      []userModel
 		seedLabels     []labelModel
 		seedTasks      []taskModel
-		seedTaskLables []taskLabelModel
+		seedTaskLabels []taskLabelModel
 		userID         domain.UserID
 		wantTasks      []*domain.Task
 	}{
@@ -35,7 +35,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 			seedTasks: []taskModel{
 				{ID: 1, Title: "テスト1", UserID: 1},
 			},
-			seedTaskLables: []taskLabelModel{},
+			seedTaskLabels: []taskLabelModel{},
 			userID:         domain.UserID(2),
 			wantTasks:      []*domain.Task{},
 		},
@@ -49,7 +49,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 			seedTasks: []taskModel{
 				{ID: 1, Title: "テスト1", UserID: 1},
 			},
-			seedTaskLables: []taskLabelModel{},
+			seedTaskLabels: []taskLabelModel{},
 			userID:         domain.UserID(1),
 			wantTasks: []*domain.Task{
 				{ID: domain.TaskID(1), Title: "テスト1", Completed: false, Labels: []*domain.Label{}},
@@ -68,7 +68,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 			seedTasks: []taskModel{
 				{ID: 1, Title: "テスト1", UserID: 1},
 			},
-			seedTaskLables: []taskLabelModel{
+			seedTaskLabels: []taskLabelModel{
 				{UserID: 1, TaskID: 1, LabelID: 1},
 				{UserID: 1, TaskID: 1, LabelID: 2},
 			},
@@ -93,7 +93,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 				{ID: 3, Title: "テスト3", UserID: 1, Completed: true},
 				{ID: 4, Title: "テスト4", UserID: 1, Completed: false},
 			},
-			seedTaskLables: []taskLabelModel{},
+			seedTaskLabels: []taskLabelModel{},
 			userID:         domain.UserID(1),
 			wantTasks: []*domain.Task{
 				{ID: domain.TaskID(4), Title: "テスト4", Completed: false, Labels: []*domain.Label{}},
@@ -108,26 +108,7 @@ func TestGetAllTaskByUserID(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			runInTx(t, func(tx *gorm.DB) {
 				if tc.seed {
-					if len(tc.seedUsers) > 0 {
-						if err := tx.Create(&tc.seedUsers).Error; err != nil {
-							t.Fatalf("failed create seed users %v", err)
-						}
-					}
-					if len(tc.seedLabels) > 0 {
-						if err := tx.Create(&tc.seedLabels).Error; err != nil {
-							t.Fatalf("failed create seed labels %v", err)
-						}
-					}
-					if len(tc.seedTasks) > 0 {
-						if err := tx.Create(&tc.seedTasks).Error; err != nil {
-							t.Fatalf("failed create seed tasks %v", err)
-						}
-					}
-					if len(tc.seedTaskLables) > 0 {
-						if err := tx.Create(&tc.seedTaskLables).Error; err != nil {
-							t.Fatalf("failed create seed task labels %v", err)
-						}
-					}
+					execSeed(t, tx, tc.seedUsers, tc.seedLabels, tc.seedTasks, tc.seedTaskLabels)
 				}
 
 				repo := NewTaskRepository(tx)
@@ -144,35 +125,9 @@ func TestGetAllTaskByUserID(t *testing.T) {
 					return
 				}
 
-				for i, task := range tc.wantTasks {
+				for i, wantTask := range tc.wantTasks {
 					gotTask := got[i]
-					if task.ID != gotTask.ID {
-						t.Errorf("want task id %v; but got task id %v", task.ID, gotTask.ID)
-					}
-					if task.Title != gotTask.Title {
-						t.Errorf("want title %v; but got %v", task.Title, gotTask.Title)
-					}
-					if task.Completed != gotTask.Completed {
-						t.Errorf("want completed %v; but got %v", task.Completed, gotTask.Completed)
-					}
-					if len(task.Labels) != len(gotTask.Labels) {
-						t.Errorf("want task labels length %v; but got length %v", len(task.Labels), len(gotTask.Labels))
-					}
-					if len(task.Labels) == 0 {
-						continue
-					}
-
-					gotLabelMap := make(map[domain.LabelID]*domain.Label)
-					for _, l := range gotTask.Labels {
-						gotLabelMap[l.ID] = l
-					}
-
-					for _, wantlabel := range task.Labels {
-						_, exists := gotLabelMap[wantlabel.ID]
-						if !exists {
-							t.Errorf("want task has label id %v; but got not exists", wantlabel.ID)
-						}
-					}
+					compareTask(t, wantTask, gotTask, true)
 				}
 			})
 		})
@@ -189,6 +144,7 @@ func TestCreateTask(t *testing.T) {
 		labelIDs   []uint
 		wantErr    bool
 		wantErrIs  error
+		wantTask   *domain.Task
 	}{
 		{
 			testName: "successCreateTaskEmptyLabel",
@@ -200,6 +156,9 @@ func TestCreateTask(t *testing.T) {
 			userID:     1,
 			labelIDs:   []uint{},
 			wantErr:    false,
+			wantTask: &domain.Task{
+				ID: 1, Title: "テスト1", Completed: false, Labels: []*domain.Label{},
+			},
 		},
 		{
 			testName: "successCreateTaskSingleLabel",
@@ -213,6 +172,14 @@ func TestCreateTask(t *testing.T) {
 			userID:   1,
 			labelIDs: []uint{1},
 			wantErr:  false,
+			wantTask: &domain.Task{
+				ID:        1,
+				Title:     "テスト2",
+				Completed: false,
+				Labels: []*domain.Label{
+					{ID: 1, Name: "テスト1"},
+				},
+			},
 		},
 		{
 			testName: "successCreateTaskMultiLabel",
@@ -227,6 +194,15 @@ func TestCreateTask(t *testing.T) {
 			userID:   1,
 			labelIDs: []uint{1, 2},
 			wantErr:  false,
+			wantTask: &domain.Task{
+				ID:        1,
+				Title:     "テスト3",
+				Completed: false,
+				Labels: []*domain.Label{
+					{ID: 1, Name: "テスト1"},
+					{ID: 2, Name: "テスト2"},
+				},
+			},
 		},
 		{
 			testName: "errorLabelNotExists",
@@ -263,15 +239,7 @@ func TestCreateTask(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
 			runInTx(t, func(tx *gorm.DB) {
-				if err := tx.Create(&tc.seedUsers).Error; err != nil {
-					t.Fatalf("failed to seed users: %v", err)
-				}
-				if len(tc.seedLabels) > 0 {
-					if err := tx.Create(&tc.seedLabels).Error; err != nil {
-						t.Fatalf("failed to seed labels: %v", err)
-					}
-				}
-
+				execSeed(t, tx, tc.seedUsers, tc.seedLabels, []taskModel{}, []taskLabelModel{})
 				repo := NewTaskRepository(tx)
 				labels := make([]domain.LabelID, 0, len(tc.seedLabels))
 				for _, labelID := range tc.labelIDs {
@@ -289,34 +257,31 @@ func TestCreateTask(t *testing.T) {
 					if !errors.Is(err, tc.wantErrIs) {
 						t.Errorf("expected err %v; but got %v", tc.wantErrIs, err)
 					}
-				} else {
-					if err != nil {
-						t.Fatalf("unexpected error: %v", err)
+					var taskLabelCount int64
+					if err := tx.Model(&taskLabelModel{}).Where("user_id = ?", tc.userID).Count(&taskLabelCount).Error; err != nil {
+						t.Fatalf("failed get task labels count %v", err)
+					}
+					if taskLabelCount != 0 {
+						t.Errorf("want task labels count 0; but got %v", taskLabelCount)
+					}
+					var taskCount int64
+					if err := tx.Model(&taskModel{}).Where("user_id = ?", tc.userID).Count(&taskCount).Error; err != nil {
+						t.Fatalf("failed task count %v", err)
+					}
+					if taskCount != 0 {
+						t.Errorf("want task count 0; but got %v", taskCount)
 					}
 
-					if got.Title != tc.title {
-						t.Errorf("want title %v; but got %v", tc.title, got.Title)
-					}
-
-					if got.Completed {
-						t.Errorf("want completed false; but got true")
-					}
-
-					if len(got.Labels) != len(tc.labelIDs) {
-						t.Errorf("want labels length %v; but got length %v", len(tc.seedLabels), len(got.Labels))
-					}
-
-					labelMap := make(map[domain.LabelID]*domain.Label)
-					for _, label := range got.Labels {
-						labelMap[label.ID] = label
-					}
-					for _, labelID := range tc.labelIDs {
-						_, exists := labelMap[domain.LabelID(labelID)]
-						if !exists {
-							t.Errorf("expect task has label id %v; but does not have", labelID)
-						}
-					}
+					return
 				}
+
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				compareTask(t, tc.wantTask, got, false)
+
+				storedTask := getTaskByID(t, tx, got.ID)
+				compareTask(t, tc.wantTask, storedTask, false)
 			})
 		})
 	}
@@ -525,27 +490,7 @@ func TestUpdateTask(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
 			runInTx(t, func(tx *gorm.DB) {
-				if len(tc.seedUsers) > 0 {
-					if err := tx.Create(&tc.seedUsers).Error; err != nil {
-						t.Fatalf("failed create seed users %v", err)
-					}
-				}
-				if len(tc.seedLabels) > 0 {
-					if err := tx.Create(&tc.seedLabels).Error; err != nil {
-						t.Fatalf("failed create seed labels %v", err)
-					}
-				}
-				if len(tc.seedTasks) > 0 {
-					if err := tx.Create(&tc.seedTasks).Error; err != nil {
-						t.Fatalf("failed create seed tasks %v", err)
-					}
-				}
-				if len(tc.seedTaskLables) > 0 {
-					if err := tx.Create(&tc.seedTaskLables).Error; err != nil {
-						t.Fatalf("failed create seed task labels %v", err)
-					}
-				}
-
+				execSeed(t, tx, tc.seedUsers, tc.seedLabels, tc.seedTasks, tc.seedTaskLables)
 				repo := NewTaskRepository(tx)
 				input := domain.UpdateTask{
 					Title:     tc.title,
@@ -563,34 +508,7 @@ func TestUpdateTask(t *testing.T) {
 					return
 				}
 
-				if tc.wantTask.ID != got.ID {
-					t.Errorf("want task id %v; but got task id %v", tc.wantTask.ID, got.ID)
-				}
-				if tc.wantTask.Title != got.Title {
-					t.Errorf("title want %v, but got %v", tc.wantTask.Title, got.Title)
-				}
-				if tc.wantTask.Completed != got.Completed {
-					t.Errorf("completed want %v; but got %v", tc.wantTask.Completed, got.Completed)
-				}
-				if len(tc.wantTask.Labels) != len(got.Labels) {
-					t.Errorf("want task labels length %v; but got length %v", len(tc.wantTask.Labels), len(got.Labels))
-				}
-				if len(tc.wantTask.Labels) == 0 {
-					return
-				}
-
-				gotLabelMap := make(map[domain.LabelID]*domain.Label)
-				for _, l := range got.Labels {
-					gotLabelMap[l.ID] = l
-				}
-
-				for _, wantlabel := range tc.wantTask.Labels {
-					_, exists := gotLabelMap[wantlabel.ID]
-					if !exists {
-						t.Errorf("want task has label id %v; but got not exists", wantlabel.ID)
-					}
-				}
-
+				compareTask(t, tc.wantTask, got, true)
 			})
 		})
 	}
@@ -683,27 +601,7 @@ func TestDeleteTask(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
 			runInTx(t, func(tx *gorm.DB) {
-				if len(tc.seedUsers) > 0 {
-					if err := tx.Create(&tc.seedUsers).Error; err != nil {
-						t.Fatalf("failed create seed users %v", err)
-					}
-				}
-				if len(tc.seedLabels) > 0 {
-					if err := tx.Create(&tc.seedLabels).Error; err != nil {
-						t.Fatalf("failed create seed labels %v", err)
-					}
-				}
-				if len(tc.seedTasks) > 0 {
-					if err := tx.Create(&tc.seedTasks).Error; err != nil {
-						t.Fatalf("failed create seed tasks %v", err)
-					}
-				}
-				if len(tc.seedTaskLables) > 0 {
-					if err := tx.Create(&tc.seedTaskLables).Error; err != nil {
-						t.Fatalf("failed create seed task labels %v", err)
-					}
-				}
-
+				execSeed(t, tx, tc.seedUsers, tc.seedLabels, tc.seedTasks, tc.seedTaskLables)
 				repo := NewTaskRepository(tx)
 				err := repo.DeleteTask(t.Context(), tc.userID, tc.taskID)
 				if tc.wantErr {
@@ -755,4 +653,71 @@ func TestDeleteTask(t *testing.T) {
 			})
 		})
 	}
+}
+
+func compareTask(t *testing.T, want, got *domain.Task, includeID bool) {
+	t.Helper()
+
+	if includeID && got.ID != want.ID {
+		t.Errorf("task id want %v; but got %v", want.ID, got.ID)
+	}
+	if got.Title != want.Title {
+		t.Errorf("task title want %v; but got %v", want.Title, got.Title)
+	}
+	if got.Completed != want.Completed {
+		t.Errorf("task completed want %v; but got %v", want.Completed, got.Completed)
+	}
+
+	if len(got.Labels) != len(want.Labels) {
+		t.Errorf("task labels length want %v; but got %v", len(want.Labels), len(got.Labels))
+	}
+	if len(want.Labels) == 0 {
+		return
+	}
+
+	gotLabelMap := make(map[domain.LabelID]*domain.Label)
+	for _, l := range got.Labels {
+		gotLabelMap[l.ID] = l
+	}
+	for _, wantLabel := range want.Labels {
+		gotLabel, exists := gotLabelMap[wantLabel.ID]
+		if !exists {
+			t.Errorf("task label want exists id %v; but got not exists", wantLabel.ID)
+		}
+		if gotLabel.Name != wantLabel.Name {
+			t.Errorf("want task label name want %v; but got %v", wantLabel.Name, gotLabel.Name)
+		}
+	}
+}
+
+func execSeed(t *testing.T, tx *gorm.DB, seedUsers []userModel, seedLabels []labelModel, seedTasks []taskModel, seedTaskLabels []taskLabelModel) {
+	if len(seedUsers) > 0 {
+		if err := tx.Create(&seedUsers).Error; err != nil {
+			t.Fatalf("failed create seed users %v", err)
+		}
+	}
+	if len(seedLabels) > 0 {
+		if err := tx.Create(&seedLabels).Error; err != nil {
+			t.Fatalf("failed create seed labels %v", err)
+		}
+	}
+	if len(seedTasks) > 0 {
+		if err := tx.Create(&seedTasks).Error; err != nil {
+			t.Fatalf("failed create seed tasks %v", err)
+		}
+	}
+	if len(seedTaskLabels) > 0 {
+		if err := tx.Create(seedTaskLabels).Error; err != nil {
+			t.Fatalf("failed create seed task labels %v", err)
+		}
+	}
+}
+
+func getTaskByID(t *testing.T, tx *gorm.DB, taskId domain.TaskID) *domain.Task {
+	var storedModel taskModel
+	if err := tx.Preload("Labels").First(&storedModel, taskId).Error; err != nil {
+		t.Fatalf("failed get task by id %v", err)
+	}
+
+	return storedModel.toEntity()
 }
