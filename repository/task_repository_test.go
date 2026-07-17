@@ -69,8 +69,8 @@ func TestGetAllTaskByUserID(t *testing.T) {
 				{ID: 1, Title: "テスト1", UserID: 1},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 1, LabelID: 1},
-				{TaskID: 1, LabelID: 2},
+				{UserID: 1, TaskID: 1, LabelID: 1},
+				{UserID: 1, TaskID: 1, LabelID: 2},
 			},
 			userID: domain.UserID(1),
 			wantTasks: []*domain.Task{
@@ -448,7 +448,7 @@ func TestUpdateTask(t *testing.T) {
 				{ID: 1, Title: "テスト1", UserID: 1, Completed: false},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 1, LabelID: 1},
+				{UserID: 1, TaskID: 1, LabelID: 1},
 			},
 			userID:    1,
 			taskID:    1,
@@ -473,7 +473,7 @@ func TestUpdateTask(t *testing.T) {
 				{ID: 1, Title: "テスト1", UserID: 1, Completed: false},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 1, LabelID: 1},
+				{UserID: 1, TaskID: 1, LabelID: 1},
 			},
 			userID:    1,
 			taskID:    1,
@@ -500,7 +500,7 @@ func TestUpdateTask(t *testing.T) {
 				{ID: 1, Title: "テスト1", UserID: 1, Completed: false},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 1, LabelID: 1},
+				{UserID: 1, TaskID: 1, LabelID: 1},
 			},
 			userID:    1,
 			taskID:    1,
@@ -640,7 +640,7 @@ func TestDeleteTask(t *testing.T) {
 				{ID: 2, Title: "テスト2", UserID: 1, Completed: false},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 2, LabelID: 1},
+				{UserID: 1, TaskID: 2, LabelID: 1},
 			},
 			userID:                  1,
 			taskID:                  1,
@@ -662,8 +662,8 @@ func TestDeleteTask(t *testing.T) {
 				{ID: 2, Title: "テスト2", UserID: 1, Completed: false},
 			},
 			seedTaskLables: []taskLabelModel{
-				{TaskID: 1, LabelID: 1},
-				{TaskID: 2, LabelID: 1},
+				{UserID: 1, TaskID: 1, LabelID: 1},
+				{UserID: 1, TaskID: 2, LabelID: 1},
 			},
 			userID:                  1,
 			taskID:                  1,
@@ -716,7 +716,7 @@ func TestDeleteTask(t *testing.T) {
 				}
 
 				var taskLabelCount int64
-				if err := tx.Model(&taskLabelModel{}).Where("task_id = ?", tc.taskID).Count(&taskLabelCount).Error; err != nil {
+				if err := tx.Model(&taskLabelModel{}).Where("user_id = ? and task_id = ?", tc.userID, tc.taskID).Count(&taskLabelCount).Error; err != nil {
 					t.Fatalf("failed get task labels count: %v", err)
 				}
 				if taskLabelCount != 0 {
@@ -732,7 +732,7 @@ func TestDeleteTask(t *testing.T) {
 				}
 
 				var otherTaskLabelCount int64
-				if err := tx.Model(&taskLabelModel{}).Where("task_id = ?", tc.otherTaskID).Count(&otherTaskLabelCount).Error; err != nil {
+				if err := tx.Model(&taskLabelModel{}).Where("user_id = ? and task_id = ?", tc.userID, tc.otherTaskID).Count(&otherTaskLabelCount).Error; err != nil {
 					t.Fatalf("failed get other task labels count %v", err)
 				}
 				if otherTaskLabelCount != tc.wantOtherTaskLabelCount {

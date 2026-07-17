@@ -41,6 +41,7 @@ func (tm *taskModel) TableName() string {
 }
 
 type taskLabelModel struct {
+	UserID  uint `gorm:"primaryKey"`
 	TaskID  uint `gorm:"primaryKey"`
 	LabelID uint `gorm:"primaryKey"`
 }
@@ -95,7 +96,7 @@ func (tr *taskRepository) CreateTask(ctx context.Context, userID domain.UserID, 
 			return domain.ErrUnexpected
 		}
 
-		if err := tr.createTaskLabels(ctx, tx, model.ID, task.LabelIDs); err != nil {
+		if err := tr.createTaskLabels(ctx, tx, userID, model.ID, task.LabelIDs); err != nil {
 			slog.ErrorContext(ctx, "Create Task: failed createTaskLabels")
 			return err
 		}
@@ -146,12 +147,12 @@ func (tr *taskRepository) UpdateTask(ctx context.Context, userID domain.UserID, 
 			return domain.ErrUnexpected
 		}
 
-		if err := tx.Where("task_id = ?", taskID).Delete(&taskLabelModel{}).Error; err != nil {
+		if err := tx.Where("user_id = ? and task_id = ?", userID, taskID).Delete(&taskLabelModel{}).Error; err != nil {
 			slog.ErrorContext(ctx, "Update Task: failed delete task labels", "error", err)
 			return domain.ErrUnexpected
 		}
 
-		if err := tr.createTaskLabels(ctx, tx, uint(taskID), task.LabelIDs); err != nil {
+		if err := tr.createTaskLabels(ctx, tx, userID, uint(taskID), task.LabelIDs); err != nil {
 			slog.ErrorContext(ctx, "Update Task: failed createTaskLabels")
 			return err
 		}
@@ -205,10 +206,11 @@ func (tr *taskRepository) getLabelCount(ctx context.Context, db *gorm.DB, userID
 	return labelCount, nil
 }
 
-func (tr *taskRepository) createTaskLabels(ctx context.Context, db *gorm.DB, taskID uint, labelIDs []domain.LabelID) error {
+func (tr *taskRepository) createTaskLabels(ctx context.Context, db *gorm.DB, userID domain.UserID, taskID uint, labelIDs []domain.LabelID) error {
 	taskLabels := make([]taskLabelModel, 0, len(labelIDs))
 	for _, labelID := range labelIDs {
 		taskLabels = append(taskLabels, taskLabelModel{
+			UserID:  uint(userID),
 			TaskID:  taskID,
 			LabelID: uint(labelID),
 		})
