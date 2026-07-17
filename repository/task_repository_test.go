@@ -534,28 +534,38 @@ func TestDeleteTask(t *testing.T) {
 		wantOtherTaskLabelCount int64
 		wantErr                 bool
 		wantErrIs               error
+		wantTaskCount           int64
+		wantTaskLabelCount      int64
 	}{
 		{
-			testName:  "taskNotFound",
-			userID:    1,
-			taskID:    1,
-			wantErr:   true,
-			wantErrIs: domain.ErrNotFound,
+			testName:           "taskNotFound",
+			userID:             1,
+			taskID:             1,
+			wantErr:            true,
+			wantErrIs:          domain.ErrNotFound,
+			wantTaskCount:      0,
+			wantTaskLabelCount: 0,
 		},
 		{
 			testName: "taskUnmatchUser",
 			seedUsers: []userModel{
 				{ID: 1, Name: "テスト", Email: "test@example.com"},
 			},
-			seedLabels: []labelModel{},
+			seedLabels: []labelModel{
+				{ID: 1, Name: "テスト", UserID: 1},
+			},
 			seedTasks: []taskModel{
 				{ID: 1, Title: "テスト1", UserID: 1},
 			},
-			seedTaskLables: []taskLabelModel{},
-			userID:         2,
-			taskID:         1,
-			wantErr:        true,
-			wantErrIs:      domain.ErrNotFound,
+			seedTaskLables: []taskLabelModel{
+				{UserID: 1, TaskID: 1, LabelID: 1},
+			},
+			userID:             2,
+			taskID:             1,
+			wantErr:            true,
+			wantErrIs:          domain.ErrNotFound,
+			wantTaskCount:      1,
+			wantTaskLabelCount: 1,
 		},
 		{
 			testName: "deleteTaskHasNotLabel",
@@ -616,6 +626,20 @@ func TestDeleteTask(t *testing.T) {
 					}
 					if !errors.Is(err, tc.wantErrIs) {
 						t.Errorf("want err %v; but got %v", tc.wantErrIs, err)
+					}
+					var taskLabelCount int64
+					if err := tx.Model(&taskLabelModel{}).Where("user_id = ?", 1).Count(&taskLabelCount).Error; err != nil {
+						t.Fatalf("failed get task labels count %v", err)
+					}
+					if taskLabelCount != tc.wantTaskLabelCount {
+						t.Errorf("want task labels count %v; but got %v", tc.wantTaskLabelCount, taskLabelCount)
+					}
+					var taskCount int64
+					if err := tx.Model(&taskModel{}).Where("user_id = ?", 1).Count(&taskCount).Error; err != nil {
+						t.Fatalf("failed get task count %v", err)
+					}
+					if taskCount != tc.wantTaskCount {
+						t.Errorf("task count want %v; but got %v", tc.wantTaskCount, taskCount)
 					}
 
 					return
