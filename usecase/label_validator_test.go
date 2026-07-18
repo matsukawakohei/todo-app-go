@@ -19,6 +19,12 @@ func TestLabelCreateValidate(t *testing.T) {
 			expected: "name is required",
 		},
 		{
+			testName: "nameBlank",
+			hasError: true,
+			name:     " ",
+			expected: "name is required",
+		},
+		{
 			testName: "nameMinChars",
 			hasError: false,
 			name:     "あ",

@@ -21,6 +21,7 @@ func (lv *labelValidator) CreateValidate(ctx context.Context, input LabelCreateI
 		&input,
 		validation.Field(
 			&input.Name,
+			stringRequiredRule("name"),
 			validation.Required.Error("name is required"),
 			validation.RuneLength(1, 50).Error("limited max 50 char"),
 		),
