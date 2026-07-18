@@ -29,6 +29,15 @@ func TestCreateTaskValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			testName: "titleBlankNG",
+			input: CreateTaskInput{
+				Title:  "   ",
+				Labels: []uint{},
+			},
+			wantErr:    true,
+			wantErrMsg: "title is required",
+		},
+		{
 			testName: "titleMaxCharOk",
 			input: CreateTaskInput{
 				Title:  strings.Repeat("あ", 50),
@@ -119,6 +128,16 @@ func TestUpdateTaskValidate(t *testing.T) {
 				Labels:    []uint{},
 			},
 			wantErr: false,
+		},
+		{
+			testName: "titleBlankNG",
+			input: UpdateTaskInput{
+				Title:     "   ",
+				Completed: false,
+				Labels:    []uint{},
+			},
+			wantErr:    true,
+			wantErrMsg: "title is required",
 		},
 		{
 			testName: "titleMaxCharOk",
