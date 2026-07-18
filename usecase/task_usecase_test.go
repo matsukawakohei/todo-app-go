@@ -74,6 +74,7 @@ func TestGetAllTasksByUserID(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			repository := MockTaskRepository{
 				getAllTasksByUserIDFn: func(ctx context.Context, userID domain.UserID) ([]*domain.Task, error) {
+					assertRequestID(t, ctx)
 					return tc.repoTasks, tc.repoErr
 				},
 			}
@@ -81,7 +82,7 @@ func TestGetAllTasksByUserID(t *testing.T) {
 			validator := NewTaskValidator()
 			usecase := NewTaskUsecase(&repository, validator)
 
-			output, err := usecase.GetAllTasksByUserID(t.Context(), tc.userID)
+			output, err := usecase.GetAllTasksByUserID(makeRequestIDContext(), tc.userID)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("want err; but err is nil")
@@ -151,6 +152,7 @@ func TestCreateTask(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			repository := MockTaskRepository{
 				createTaskFn: func(ctx context.Context, userID domain.UserID, input domain.CreateTask) (*domain.Task, error) {
+					assertRequestID(t, ctx)
 					return tc.repoTask, tc.repoErr
 				},
 			}
@@ -158,7 +160,7 @@ func TestCreateTask(t *testing.T) {
 			validator := NewTaskValidator()
 			usecase := NewTaskUsecase(&repository, validator)
 
-			got, err := usecase.CreateTask(t.Context(), tc.userID, tc.input)
+			got, err := usecase.CreateTask(makeRequestIDContext(), tc.userID, tc.input)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("want err; but err is nil")
@@ -234,6 +236,7 @@ func TestUpdateTask(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			repository := MockTaskRepository{
 				updateTaskFn: func(ctx context.Context, userID domain.UserID, taskID domain.TaskID, input domain.UpdateTask) (*domain.Task, error) {
+					assertRequestID(t, ctx)
 					return tc.repoTask, tc.repoErr
 				},
 			}
@@ -241,7 +244,7 @@ func TestUpdateTask(t *testing.T) {
 			validator := NewTaskValidator()
 			usecase := NewTaskUsecase(&repository, validator)
 
-			got, err := usecase.UpdateTask(t.Context(), tc.userID, tc.taskID, tc.input)
+			got, err := usecase.UpdateTask(makeRequestIDContext(), tc.userID, tc.taskID, tc.input)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("want err; but err is nil")
@@ -297,6 +300,7 @@ func TestDeleteTask(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			repository := MockTaskRepository{
 				deleteTaskFn: func(ctx context.Context, userID domain.UserID, taskID domain.TaskID) error {
+					assertRequestID(t, ctx)
 					return tc.repoErr
 				},
 			}
@@ -304,7 +308,7 @@ func TestDeleteTask(t *testing.T) {
 			validator := NewTaskValidator()
 			usecase := NewTaskUsecase(&repository, validator)
 
-			err := usecase.DeleteTask(t.Context(), tc.userID, tc.taskID)
+			err := usecase.DeleteTask(makeRequestIDContext(), tc.userID, tc.taskID)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("want err; but err is nil")
