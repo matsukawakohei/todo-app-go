@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/matsukawakohei/todo-app-go/domain"
@@ -72,8 +73,10 @@ func TestGetAllTasksByUserID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var inputUserID domain.UserID
 			repository := MockTaskRepository{
 				getAllTasksByUserIDFn: func(ctx context.Context, userID domain.UserID) ([]*domain.Task, error) {
+					inputUserID = userID
 					assertRequestID(t, ctx)
 					return tc.repoTasks, tc.repoErr
 				},
@@ -92,6 +95,10 @@ func TestGetAllTasksByUserID(t *testing.T) {
 				}
 
 				return
+			}
+
+			if inputUserID != tc.userID {
+				t.Errorf("input userID want %v; but got %v", tc.userID, inputUserID)
 			}
 
 			if err != nil {
@@ -150,9 +157,13 @@ func TestCreateTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var inputUserID domain.UserID
+			var inputTask domain.CreateTask
 			repository := MockTaskRepository{
 				createTaskFn: func(ctx context.Context, userID domain.UserID, input domain.CreateTask) (*domain.Task, error) {
 					assertRequestID(t, ctx)
+					inputUserID = userID
+					inputTask = input
 					return tc.repoTask, tc.repoErr
 				},
 			}
@@ -174,6 +185,15 @@ func TestCreateTask(t *testing.T) {
 			if err != nil {
 				t.Fatalf("want err is nil; but got %v", err)
 			}
+
+			if inputUserID != tc.userID {
+				t.Errorf("input userID want %v; but got %v", tc.userID, inputUserID)
+			}
+			wantTask := tc.input.toEntityInput()
+			if !reflect.DeepEqual(inputTask, wantTask) {
+				t.Errorf("input CreateTask want %+v; but got %+v", wantTask, inputTask)
+			}
+
 			compareTask(t, got, tc.wantTask)
 		})
 	}
@@ -234,9 +254,15 @@ func TestUpdateTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var inputUserID domain.UserID
+			var inputTaskID domain.TaskID
+			var inputTask domain.UpdateTask
 			repository := MockTaskRepository{
 				updateTaskFn: func(ctx context.Context, userID domain.UserID, taskID domain.TaskID, input domain.UpdateTask) (*domain.Task, error) {
 					assertRequestID(t, ctx)
+					inputUserID = userID
+					inputTaskID = taskID
+					inputTask = input
 					return tc.repoTask, tc.repoErr
 				},
 			}
@@ -259,6 +285,18 @@ func TestUpdateTask(t *testing.T) {
 			if err != nil {
 				t.Fatalf("want err is nil; but got %v", err)
 			}
+
+			if inputUserID != tc.userID {
+				t.Errorf("input userID want %v; but got %v", tc.userID, inputUserID)
+			}
+			if inputTaskID != tc.taskID {
+				t.Errorf("input taskID want %v; but got %v", tc.taskID, inputTaskID)
+			}
+			wantTask := tc.input.toEntityInput()
+			if !reflect.DeepEqual(inputTask, wantTask) {
+				t.Errorf("input UpdateTask want %+v; but got %+v", wantTask, inputTask)
+			}
+
 			compareTask(t, got, tc.wantTask)
 		})
 	}
@@ -298,9 +336,13 @@ func TestDeleteTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var inputUserID domain.UserID
+			var inputTaskID domain.TaskID
 			repository := MockTaskRepository{
 				deleteTaskFn: func(ctx context.Context, userID domain.UserID, taskID domain.TaskID) error {
 					assertRequestID(t, ctx)
+					inputUserID = userID
+					inputTaskID = taskID
 					return tc.repoErr
 				},
 			}
@@ -322,6 +364,13 @@ func TestDeleteTask(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("want err is nil; but got %v", err)
+			}
+
+			if inputUserID != tc.userID {
+				t.Errorf("input userID want %v; but got %v", tc.userID, inputUserID)
+			}
+			if inputTaskID != tc.taskID {
+				t.Errorf("input taskID want %v; but got %v", tc.taskID, inputTaskID)
 			}
 		})
 	}
