@@ -71,6 +71,7 @@ func TestLabelGetAllByUserID(t *testing.T) {
 			var capturedUserID domain.UserID
 			mockRepo := &mockLabelRepository{
 				getAllByUserIDFn: func(ctx context.Context, userID domain.UserID) ([]*domain.Label, error) {
+					assertRequestID(t, ctx)
 					capturedUserID = userID
 					return tc.repoLabels, tc.repoErr
 				},
@@ -83,7 +84,7 @@ func TestLabelGetAllByUserID(t *testing.T) {
 			}
 
 			lu := NewLabelUsecase(mockRepo, mockValidator)
-			output, err := lu.GetAllByUserID(t.Context(), tc.userID)
+			output, err := lu.GetAllByUserID(makeRequestIDContext(), tc.userID)
 
 			if tc.wantErr {
 				if err == nil {
@@ -171,6 +172,7 @@ func TestLabelCreate(t *testing.T) {
 			var capturedInput domain.CreateLabel
 			mockRepo := &mockLabelRepository{
 				createLabelFn: func(ctx context.Context, userID domain.UserID, label domain.CreateLabel) (*domain.Label, error) {
+					assertRequestID(t, ctx)
 					called = true
 					capturedUserID = userID
 					capturedInput = label
@@ -185,7 +187,7 @@ func TestLabelCreate(t *testing.T) {
 			}
 
 			lu := NewLabelUsecase(mockRepo, mockValidator)
-			label, err := lu.Create(t.Context(), tc.userID, tc.input)
+			label, err := lu.Create(makeRequestIDContext(), tc.userID, tc.input)
 
 			if called != tc.wantCalled {
 				t.Errorf("expect repository called is %v; but got %v", tc.wantCalled, called)
@@ -254,6 +256,7 @@ func TestLabelDelete(t *testing.T) {
 			var capturedLabelID domain.LabelID
 			mockRepo := &mockLabelRepository{
 				deleteLabelFn: func(ctx context.Context, userID domain.UserID, labelID domain.LabelID) error {
+					assertRequestID(t, ctx)
 					capturedUserID = userID
 					capturedLabelID = labelID
 					return tc.repoErr
@@ -267,7 +270,7 @@ func TestLabelDelete(t *testing.T) {
 			}
 
 			lu := NewLabelUsecase(mockRepo, mockValidator)
-			err := lu.Delete(t.Context(), tc.userID, tc.labelID)
+			err := lu.Delete(makeRequestIDContext(), tc.userID, tc.labelID)
 
 			if tc.wantErr {
 				if err == nil {
