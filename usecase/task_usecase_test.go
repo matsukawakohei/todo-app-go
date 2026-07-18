@@ -31,7 +31,7 @@ func (m *MockTaskRepository) DeleteTask(ctx context.Context, userID domain.UserI
 	return m.deleteTaskFn(ctx, userID, taskID)
 }
 
-func TestGetAllTasksByUserId(t *testing.T) {
+func TestGetAllTasksByUserID(t *testing.T) {
 	tests := []struct {
 		testName  string
 		userID    domain.UserID
