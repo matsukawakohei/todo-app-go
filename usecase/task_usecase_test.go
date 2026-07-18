@@ -33,13 +33,14 @@ func (m *MockTaskRepository) DeleteTask(ctx context.Context, userID domain.UserI
 
 func TestGetAllTasksByUserID(t *testing.T) {
 	tests := []struct {
-		testName  string
-		userID    domain.UserID
-		repoTasks []*domain.Task
-		repoErr   error
-		wantTasks []*Task
-		wantErr   bool
-		wantErrIs error
+		testName    string
+		userID      domain.UserID
+		repoTasks   []*domain.Task
+		repoErr     error
+		wantTaskLen int
+		wantTasks   []*Task
+		wantErr     bool
+		wantErrIs   error
 	}{
 		{
 			testName: "success",
@@ -50,6 +51,7 @@ func TestGetAllTasksByUserID(t *testing.T) {
 					{ID: 1, Name: "test label"},
 				}},
 			},
+			wantTaskLen: 2,
 			wantTasks: []*Task{
 				{ID: 1, Title: "test task 1", Completed: false, Labels: []*Label{}},
 				{ID: 2, Title: "test task 2", Completed: true, Labels: []*Label{
@@ -91,6 +93,12 @@ func TestGetAllTasksByUserID(t *testing.T) {
 				return
 			}
 
+			if err != nil {
+				t.Fatalf("err want nil; but got %v", err)
+			}
+			if len(output.Tasks) != tc.wantTaskLen {
+				t.Fatalf("task len want %v; but got %v", tc.wantTaskLen, len(output.Tasks))
+			}
 			for i, got := range output.Tasks {
 				want := tc.wantTasks[i]
 				compareTask(t, got, want)
@@ -161,7 +169,9 @@ func TestCreateTask(t *testing.T) {
 
 				return
 			}
-
+			if err != nil {
+				t.Fatalf("want err is nil; but got %v", err)
+			}
 			compareTask(t, got, tc.wantTask)
 		})
 	}
@@ -243,6 +253,9 @@ func TestUpdateTask(t *testing.T) {
 				return
 			}
 
+			if err != nil {
+				t.Fatalf("want err is nil; but got %v", err)
+			}
 			compareTask(t, got, tc.wantTask)
 		})
 	}
@@ -301,6 +314,10 @@ func TestDeleteTask(t *testing.T) {
 				}
 
 				return
+			}
+
+			if err != nil {
+				t.Fatalf("want err is nil; but got %v", err)
 			}
 		})
 	}
