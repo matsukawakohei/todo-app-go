@@ -70,7 +70,7 @@ func getLoginUserFromContext(c *echo.Context) (uint, error) {
 
 func getIDFromContext(c *echo.Context, paramName string) (uint, error) {
 	idString := c.Param(paramName)
-	id, err := strconv.ParseUint(idString, 10, 64)
+	id, err := strconv.ParseUint(idString, 10, strconv.IntSize)
 	if err != nil {
 		msg := fmt.Sprintf("Failed parse %s to int from string", paramName)
 		slog.ErrorContext(c.Request().Context(), msg, "error", err)
