@@ -2,9 +2,11 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -64,4 +66,16 @@ func getLoginUserFromContext(c *echo.Context) (uint, error) {
 	}
 
 	return uint(userID), nil
+}
+
+func getIDFromContext(c *echo.Context, paramName string) (uint, error) {
+	IDString := c.Param(paramName)
+	ID, err := strconv.ParseUint(IDString, 10, 64)
+	if err != nil {
+		msg := fmt.Sprintf("Failed parse %s to int from string", paramName)
+		slog.ErrorContext(c.Request().Context(), msg, "error", err)
+		return 0, domain.ErrBadRequest
+	}
+
+	return uint(ID), nil
 }
