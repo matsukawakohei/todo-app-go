@@ -10,7 +10,7 @@ import (
 	"github.com/matsukawakohei/todo-app-go/middleware"
 )
 
-func NewRouter(uc controller.UserController, lc controller.LabelController, frontURL string, secret string) *echo.Echo {
+func NewRouter(uc controller.UserController, lc controller.LabelController, tc controller.TaskController, frontURL string, secret string) *echo.Echo {
 	e := echo.New()
 	e.Use(echoMiddleware.RequestID())
 	e.Use(middleware.RequestIDToContext())
@@ -48,6 +48,16 @@ func NewRouter(uc controller.UserController, lc controller.LabelController, fron
 	label.GET("", lc.GetAllLabels)
 	label.POST("", lc.CreateLabel)
 	label.DELETE("/:id", lc.DeleteLabel)
+
+	task := v1.Group("/tasks")
+	task.Use(echojwt.WithConfig(echojwt.Config{
+		SigningKey:  []byte(secret),
+		TokenLookup: "cookie:token",
+	}))
+	task.GET("", tc.GetAllTasksByUserID)
+	task.POST("", tc.CreateTask)
+	task.PUT("/:id", tc.UpdateTask)
+	task.DELETE("/:id", tc.DeleteTask)
 
 	return e
 }

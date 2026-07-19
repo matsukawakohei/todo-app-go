@@ -21,7 +21,7 @@ type taskController struct {
 }
 
 func NewTaskController(tu usecase.TaskUsecase) TaskController {
-	return &taskController{ tu }
+	return &taskController{tu}
 }
 
 func (tc *taskController) GetAllTasksByUserID(c *echo.Context) error {
