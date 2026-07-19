@@ -59,7 +59,12 @@ func main() {
 	labelUsecase := usecase.NewLabelUsecase(labelRepository, labelValidator)
 	labelController := controller.NewLabelController(labelUsecase)
 
-	e := router.NewRouter(userController, labelController, frontURL, secret)
+	taskRepository := repository.NewTaskRepository(db)
+	taskValidator := usecase.NewTaskValidator()
+	taskUsecase := usecase.NewTaskUsecase(taskRepository, taskValidator)
+	taskController := controller.NewTaskController(taskUsecase)
+
+	e := router.NewRouter(userController, labelController, taskController, frontURL, secret)
 
 	port := os.Getenv("API_PORT")
 	if port == "" {
