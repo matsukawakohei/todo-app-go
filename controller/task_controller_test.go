@@ -228,6 +228,13 @@ func TestUpdateTask(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 		},
 		{
+			testName:   "negativeTaskID",
+			loggedIn:   true,
+			taskIDStr:  "-1",
+			body:       `{"Title":"task1","Completed":false}`,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
 			testName:   "bindError",
 			loggedIn:   true,
 			taskIDStr:  "1",
