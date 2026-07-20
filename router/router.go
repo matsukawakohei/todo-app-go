@@ -14,6 +14,7 @@ func NewRouter(uc controller.UserController, lc controller.LabelController, tc c
 	e := echo.New()
 	e.Use(echoMiddleware.RequestID())
 	e.Use(middleware.RequestIDToContext())
+	e.Use(middleware.AccessLogger())
 
 	e.Use(echoMiddleware.CORSWithConfig(echoMiddleware.CORSConfig{
 		AllowOrigins: []string{frontURL},
