@@ -18,7 +18,7 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 
 ## ディレクトリ構成
 
-```
+```text
 .
 ├── controller/   HTTPリクエストのハンドリング
 ├── usecase/      ビジネスロジック・バリデーション
@@ -61,7 +61,7 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 
 `.env` ファイルを作成し、以下を設定します。
 
-```
+```text
 DB_SSLMODE=disable
 DB_USER=todo
 DB_PASSWORD=todo
