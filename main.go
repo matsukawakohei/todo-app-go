@@ -21,9 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if err := db.Migrate(gormDB); err != nil {
-		log.Fatalln(err)
-	}
 	frontURL := os.Getenv("FE_URL")
 	if frontURL == "" {
 		slog.Error("FE_URL is empty", "frontURL", frontURL)
@@ -50,6 +47,10 @@ func main() {
 	if len(secret) < 32 {
 		slog.Error("SECRET is too short")
 		os.Exit(1)
+	}
+
+	if err := db.Migrate(); err != nil {
+		log.Fatalln(err)
 	}
 
 	userRepository := repository.NewUserRepository(gormDB)
