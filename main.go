@@ -17,8 +17,11 @@ import (
 
 func main() {
 	slog.SetDefault(slog.New(middleware.NewContextSlogHandler(slog.NewJSONHandler(os.Stdout, nil))))
-	db, err := db.NewDB()
+	gormDB, err := db.NewDB()
 	if err != nil {
+		log.Fatalln(err)
+	}
+	if err := db.Migrate(gormDB); err != nil {
 		log.Fatalln(err)
 	}
 	frontURL := os.Getenv("FE_URL")
@@ -49,17 +52,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	userRepository := repository.NewUserRepository(db)
+	userRepository := repository.NewUserRepository(gormDB)
 	userValidator := usecase.NewUserValidator()
 	userUsecase := usecase.NewUserUsecase(userRepository, userValidator, secret)
 	userController := controller.NewUserController(userUsecase)
 
-	labelRepository := repository.NewLabelRepository(db)
+	labelRepository := repository.NewLabelRepository(gormDB)
 	labelValidator := usecase.NewLabelValidator()
 	labelUsecase := usecase.NewLabelUsecase(labelRepository, labelValidator)
 	labelController := controller.NewLabelController(labelUsecase)
 
-	taskRepository := repository.NewTaskRepository(db)
+	taskRepository := repository.NewTaskRepository(gormDB)
 	taskValidator := usecase.NewTaskValidator()
 	taskUsecase := usecase.NewTaskUsecase(taskRepository, taskValidator)
 	taskController := controller.NewTaskController(taskUsecase)
