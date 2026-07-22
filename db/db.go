@@ -47,11 +47,15 @@ func getDatabaseDSN() string {
 	if sslmode == "" {
 		sslmode = "require"
 	}
-	return (&url.URL{
+	values := url.Values{}
+	values.Add("sslmode", sslmode)
+	url := &url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")),
 		Host:     net.JoinHostPort(os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
 		Path:     os.Getenv("DB_NAME"),
-		RawQuery: "sslmode=" + sslmode,
-	}).String()
+		RawQuery: values.Encode(),
+	}
+
+	return url.String()
 }
