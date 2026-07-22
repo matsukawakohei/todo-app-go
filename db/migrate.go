@@ -1,21 +1,43 @@
 package db
 
 import (
+	"context"
+	"database/sql"
 	"errors"
+	"log/slog"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"gorm.io/gorm"
+	_ "github.com/lib/pq"
 )
 
-func Migrate(db *gorm.DB) error {
-	sqlDB, err := db.DB()
+func Migrate() error {
+	db, err := sql.Open("postgres", getDatabaseDNS())
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("failed to close db", "error", err)
+		}
+	}()
 
-	driver, err := migratepostgres.WithInstance(sqlDB, &migratepostgres.Config{})
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			slog.Error("failed to close db connection", "error", err)
+		}
+	}()
+
+	driver, err := migratepostgres.WithConnection(ctx, conn, &migratepostgres.Config{})
 	if err != nil {
 		return err
 	}
