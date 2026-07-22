@@ -20,19 +20,7 @@ func NewDB() (*gorm.DB, error) {
 		}
 	}
 
-	sslmode := os.Getenv("DB_SSLMODE")
-	if sslmode == "" {
-		sslmode = "require"
-	}
-	dns := (&url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword(os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")),
-		Host:     net.JoinHostPort(os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
-		Path:     os.Getenv("DB_NAME"),
-		RawQuery: "sslmode=" + sslmode,
-	}).String()
-
-	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(getDatabaseDSN()), &gorm.Config{
 		TranslateError: true,
 	})
 	if err != nil {
@@ -52,4 +40,22 @@ func CloseDB(db *gorm.DB) {
 	if err := sqlDB.Close(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func getDatabaseDSN() string {
+	sslmode := os.Getenv("DB_SSLMODE")
+	if sslmode == "" {
+		sslmode = "require"
+	}
+	values := url.Values{}
+	values.Add("sslmode", sslmode)
+	url := &url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD")),
+		Host:     net.JoinHostPort(os.Getenv("DB_HOST"), os.Getenv("DB_PORT")),
+		Path:     os.Getenv("DB_NAME"),
+		RawQuery: values.Encode(),
+	}
+
+	return url.String()
 }
