@@ -20,7 +20,7 @@ func NewDB() (*gorm.DB, error) {
 		}
 	}
 
-	db, err := gorm.Open(postgres.Open(getDatabaseDNS()), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(getDatabaseDSN()), &gorm.Config{
 		TranslateError: true,
 	})
 	if err != nil {
@@ -42,7 +42,7 @@ func CloseDB(db *gorm.DB) {
 	}
 }
 
-func getDatabaseDNS() string {
+func getDatabaseDSN() string {
 	sslmode := os.Getenv("DB_SSLMODE")
 	if sslmode == "" {
 		sslmode = "require"

@@ -14,7 +14,7 @@ import (
 )
 
 func Migrate() error {
-	db, err := sql.Open("postgres", getDatabaseDNS())
+	db, err := sql.Open("postgres", getDatabaseDSN())
 	if err != nil {
 		return err
 	}
