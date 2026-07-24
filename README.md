@@ -71,7 +71,7 @@ git submodule update --init --recursive
 クローン時にまとめて取得する場合は以下を使用してください。
 
 ```sh
-git clone --recurse-submodules <repository-url>
+git clone --recurse-submodules https://github.com/matsukawakohei/todo-app-go.git
 ```
 
 ### 2. 環境変数の設定
