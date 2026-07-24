@@ -27,10 +27,13 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 ├── router/       ルーティング定義
 ├── middleware/   アクセスログ・リクエストID付与などの独自ミドルウェア
 ├── db/           DB接続
-└── migration/    DBマイグレーションファイル
+├── migration/    DBマイグレーションファイル
+└── schema/       OpenAPIスキーマ（サブモジュール: todo-app-schema）
 ```
 
 `domain`にエンティティとリポジトリインターフェースを定義し、`controller` → `usecase` → `domain`、`repository` → `domain`という依存方向で、`repository`が`domain`のインターフェースを実装する構成（依存性逆転の原則）を採用しています。
+
+`schema`はAPI仕様（OpenAPI）を管理する[todo-app-schema](https://github.com/matsukawakohei/todo-app-schema)リポジトリをGitサブモジュールとして参照しています。
 
 ## 主な機能
 
@@ -57,7 +60,21 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 
 ## 環境構築
 
-### 1. 環境変数の設定
+### 1. サブモジュールの取得
+
+`schema`（OpenAPIスキーマ）はサブモジュールのため、以下のコマンドで取得します。
+
+```sh
+git submodule update --init --recursive
+```
+
+クローン時にまとめて取得する場合は以下を使用してください。
+
+```sh
+git clone --recurse-submodules <repository-url>
+```
+
+### 2. 環境変数の設定
 
 `.env` ファイルを作成し、以下を設定します。
 
@@ -72,7 +89,7 @@ FE_URL=http://localhost:5174
 SECRET=（32文字以上のランダムな文字列）
 ```
 
-### 2. DBの起動
+### 3. DBの起動
 
 ```sh
 make db-up
@@ -85,7 +102,7 @@ make db-remove
 make db-up
 ```
 
-### 3. マイグレーションの実行
+### 4. マイグレーションの実行
 
 マイグレーションの実行
 
@@ -105,7 +122,7 @@ make migrate-rollback
 make create-migration {ファイル名}
 ```
 
-### 4. アプリケーションの起動
+### 5. アプリケーションの起動
 
 ```sh
 make app
