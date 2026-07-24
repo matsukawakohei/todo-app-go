@@ -72,6 +72,7 @@ git submodule update --init --recursive
 
 ```sh
 git clone --recurse-submodules https://github.com/matsukawakohei/todo-app-go.git
+cd todo-app-go
 ```
 
 ### 2. 環境変数の設定
