@@ -106,6 +106,9 @@ func TestSignUp(t *testing.T) {
 			if output.ID != tc.wantOutputID {
 				t.Errorf("expect output.ID is %d; but got %d", tc.wantOutputID, output.ID)
 			}
+			if output.Name != tc.repoUser.Name {
+				t.Errorf("expect output.Name is %s; but got %s", tc.repoUser.Name, output.Name)
+			}
 			if output.Email != tc.repoUser.Email {
 				t.Errorf("expect output.Email is %s; but got %s", tc.repoUser.Email, output.Email)
 			}
@@ -189,7 +192,7 @@ func TestLogin(t *testing.T) {
 			}
 
 			uu := NewUserUsecase(mockRepo, mockValidator, tc.secret)
-			token, err := uu.Login(context.Background(), tc.input)
+			output, err := uu.Login(context.Background(), tc.input)
 
 			if tc.wantErr {
 				if err == nil {
@@ -204,7 +207,7 @@ func TestLogin(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			parsed, parseErr := jwt.Parse(token, func(t *jwt.Token) (any, error) {
+			parsed, parseErr := jwt.Parse(output.Token, func(t *jwt.Token) (any, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 				}
@@ -223,6 +226,15 @@ func TestLogin(t *testing.T) {
 				t.Errorf("user_id claim is missing")
 			} else if userID != float64(tc.repoUser.ID) {
 				t.Errorf("expect user_id %v; but got %v", float64(tc.repoUser.ID), userID)
+			}
+			if output.ID != tc.repoUser.ID {
+				t.Errorf("expect output.ID is %d; but got %d", tc.repoUser.ID, output.ID)
+			}
+			if output.Name != tc.repoUser.Name {
+				t.Errorf("expect output.Name is %s; but got %s", tc.repoUser.Name, output.Name)
+			}
+			if output.Email != tc.repoUser.Email {
+				t.Errorf("expect output.Email is %s; but got %s", tc.repoUser.Email, output.Email)
 			}
 		})
 	}

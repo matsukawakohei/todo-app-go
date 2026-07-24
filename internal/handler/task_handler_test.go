@@ -1,14 +1,12 @@
-package controller
+package handler
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/http"
 	"testing"
 
-	"github.com/labstack/echo/v5"
 	"github.com/matsukawakohei/todo-app-go/domain"
+	"github.com/matsukawakohei/todo-app-go/internal/api"
 	"github.com/matsukawakohei/todo-app-go/usecase"
 )
 
@@ -41,7 +39,7 @@ func TestGetAllTasksByUserID(t *testing.T) {
 		loggedIn              bool
 		getAllTasksByUserIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetAllTasksOutput, error)
 		wantStatus            int
-		wantTasks             []*usecase.Task
+		wantTasks             []api.Task
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
@@ -63,7 +61,7 @@ func TestGetAllTasksByUserID(t *testing.T) {
 				return &usecase.GetAllTasksOutput{Tasks: []*usecase.Task{}}, nil
 			},
 			wantStatus: http.StatusOK,
-			wantTasks:  []*usecase.Task{},
+			wantTasks:  []api.Task{},
 		},
 		{
 			testName: "success",
@@ -75,40 +73,42 @@ func TestGetAllTasksByUserID(t *testing.T) {
 				}}, nil
 			},
 			wantStatus: http.StatusOK,
-			wantTasks: []*usecase.Task{
-				{ID: 1, Title: "task1", Labels: []*usecase.Label{}},
-				{ID: 2, Title: "task2", Completed: true, Labels: []*usecase.Label{}},
+			wantTasks: []api.Task{
+				{Id: 1, Title: "task1", Labels: []api.Label{}},
+				{Id: 2, Title: "task2", Completed: true, Labels: []api.Label{}},
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodGet, "")
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
+				ctx = contextWithUser(1)
 			}
-			tcon := NewTaskController(&mockTaskUsecase{getAllTasksByUserIDFn: tc.getAllTasksByUserIDFn})
-			if err := tcon.GetAllTasksByUserID(c); err != nil {
-				t.Fatalf("task controller GetAllTasksByUserID failed: %v", err)
-			}
-
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			th := NewTaskHandler(&mockTaskUsecase{getAllTasksByUserIDFn: tc.getAllTasksByUserIDFn})
+			response, err := th.GetTasks(ctx, api.GetTasksRequestObject{})
+			if err != nil {
+				t.Fatalf("task handler GetTasks failed: %v", err)
 			}
 
-			if tc.wantTasks != nil {
-				var output usecase.GetAllTasksOutput
-				if err := json.Unmarshal(rec.Body.Bytes(), &output); err != nil {
-					t.Fatalf("failed to unmarshal response body: %v", err)
+			switch tc.wantStatus {
+			case http.StatusOK:
+				got, ok := response.(api.GetTasks200JSONResponse)
+				if !ok {
+					t.Fatalf("expected api.GetTasks200JSONResponse; got %T", response)
 				}
-				if len(output.Tasks) != len(tc.wantTasks) {
-					t.Fatalf("expected %d tasks; got %d", len(tc.wantTasks), len(output.Tasks))
+				if len(got.Data) != len(tc.wantTasks) {
+					t.Fatalf("expected %d tasks; got %d", len(tc.wantTasks), len(got.Data))
 				}
-				for i, tsk := range output.Tasks {
-					if tsk.ID != tc.wantTasks[i].ID || tsk.Title != tc.wantTasks[i].Title || tsk.Completed != tc.wantTasks[i].Completed {
-						t.Errorf("expected task %+v; got %+v", *tc.wantTasks[i], *tsk)
+				for i, tsk := range got.Data {
+					if tsk.Id != tc.wantTasks[i].Id || tsk.Title != tc.wantTasks[i].Title || tsk.Completed != tc.wantTasks[i].Completed {
+						t.Errorf("expected task %+v; got %+v", tc.wantTasks[i], tsk)
 					}
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.GetTasks500JSONResponse); !ok {
+					t.Fatalf("expected api.GetTasks500JSONResponse; got %T", response)
 				}
 			}
 		})
@@ -119,36 +119,30 @@ func TestCreateTask(t *testing.T) {
 	tests := []struct {
 		testName   string
 		loggedIn   bool
-		body       string
+		title      string
 		createFn   func(ctx context.Context, userID domain.UserID, input usecase.CreateTaskInput) (*usecase.Task, error)
 		wantStatus int
-		wantTask   *usecase.Task
+		wantTask   *api.Task
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
 			loggedIn:   false,
-			body:       `{"Title":"task1"}`,
+			title:      "task1",
 			wantStatus: http.StatusInternalServerError,
-		},
-		{
-			testName:   "bindError",
-			loggedIn:   true,
-			body:       `{invalid}`,
-			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName: "validationError",
 			loggedIn: true,
-			body:     `{"Title":""}`,
+			title:    "",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.CreateTaskInput) (*usecase.Task, error) {
-				return nil, errors.New("Title: title is required.")
+				return nil, domain.ErrBadRequest
 			},
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName: "labelCountMismatch",
 			loggedIn: true,
-			body:     `{"Title":"task1","Labels":[1]}`,
+			title:    "task1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.CreateTaskInput) (*usecase.Task, error) {
 				return nil, domain.ErrBadRequest
 			},
@@ -157,7 +151,7 @@ func TestCreateTask(t *testing.T) {
 		{
 			testName: "usecaseErrUnexpected",
 			loggedIn: true,
-			body:     `{"Title":"task1"}`,
+			title:    "task1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.CreateTaskInput) (*usecase.Task, error) {
 				return nil, domain.ErrUnexpected
 			},
@@ -166,37 +160,44 @@ func TestCreateTask(t *testing.T) {
 		{
 			testName: "success",
 			loggedIn: true,
-			body:     `{"Title":"task1"}`,
+			title:    "task1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.CreateTaskInput) (*usecase.Task, error) {
 				return &usecase.Task{ID: 1, Title: "task1", Labels: []*usecase.Label{}}, nil
 			},
 			wantStatus: http.StatusCreated,
-			wantTask:   &usecase.Task{ID: 1, Title: "task1", Labels: []*usecase.Label{}},
+			wantTask:   &api.Task{Id: 1, Title: "task1", Labels: []api.Label{}},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodPost, tc.body)
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
+				ctx = contextWithUser(1)
 			}
-			tcon := NewTaskController(&mockTaskUsecase{createTaskFn: tc.createFn})
-			if err := tcon.CreateTask(c); err != nil {
-				t.Fatalf("task controller CreateTask failed: %v", err)
-			}
-
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			th := NewTaskHandler(&mockTaskUsecase{createTaskFn: tc.createFn})
+			request := api.CreateTaskRequestObject{Body: &api.TaskCreateInput{Title: tc.title, Labels: []int{}}}
+			response, err := th.CreateTask(ctx, request)
+			if err != nil {
+				t.Fatalf("task handler CreateTask failed: %v", err)
 			}
 
-			if tc.wantTask != nil {
-				var output usecase.Task
-				if err := json.Unmarshal(rec.Body.Bytes(), &output); err != nil {
-					t.Fatalf("failed to unmarshal response body: %v", err)
+			switch tc.wantStatus {
+			case http.StatusCreated:
+				got, ok := response.(api.CreateTask201JSONResponse)
+				if !ok {
+					t.Fatalf("expected api.CreateTask201JSONResponse; got %T", response)
 				}
-				if output.ID != tc.wantTask.ID || output.Title != tc.wantTask.Title || output.Completed != tc.wantTask.Completed {
-					t.Errorf("expected task %+v; got %+v", *tc.wantTask, output)
+				if got.Data.Id != tc.wantTask.Id || got.Data.Title != tc.wantTask.Title || got.Data.Completed != tc.wantTask.Completed {
+					t.Errorf("expected task %+v; got %+v", *tc.wantTask, got.Data)
+				}
+			case http.StatusBadRequest:
+				if _, ok := response.(api.CreateTask400JSONResponse); !ok {
+					t.Fatalf("expected api.CreateTask400JSONResponse; got %T", response)
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.CreateTask500JSONResponse); !ok {
+					t.Fatalf("expected api.CreateTask500JSONResponse; got %T", response)
 				}
 			}
 		})
@@ -207,65 +208,52 @@ func TestUpdateTask(t *testing.T) {
 	tests := []struct {
 		testName   string
 		loggedIn   bool
-		taskIDStr  string
-		body       string
+		taskID     int
+		title      string
+		completed  bool
 		updateFn   func(ctx context.Context, userID domain.UserID, taskID domain.TaskID, input usecase.UpdateTaskInput) (*usecase.Task, error)
 		wantStatus int
-		wantTask   *usecase.Task
+		wantTask   *api.Task
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
 			loggedIn:   false,
-			taskIDStr:  "1",
-			body:       `{"Title":"task1","Completed":false}`,
+			taskID:     1,
+			title:      "task1",
 			wantStatus: http.StatusInternalServerError,
-		},
-		{
-			testName:   "getTaskIDFromParamError",
-			loggedIn:   true,
-			taskIDStr:  "abc",
-			body:       `{"Title":"task1","Completed":false}`,
-			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName:   "negativeTaskID",
 			loggedIn:   true,
-			taskIDStr:  "-1",
-			body:       `{"Title":"task1","Completed":false}`,
+			taskID:     -1,
+			title:      "task1",
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			testName:   "bindError",
-			loggedIn:   true,
-			taskIDStr:  "1",
-			body:       `{invalid}`,
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			testName:  "validationError",
-			loggedIn:  true,
-			taskIDStr: "1",
-			body:      `{"Title":"","Completed":false}`,
+			testName: "validationError",
+			loggedIn: true,
+			taskID:   1,
+			title:    "",
 			updateFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID, _ usecase.UpdateTaskInput) (*usecase.Task, error) {
-				return nil, errors.New("Title: title is required.")
+				return nil, domain.ErrBadRequest
 			},
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			testName:  "notFound",
-			loggedIn:  true,
-			taskIDStr: "1",
-			body:      `{"Title":"task1","Completed":false}`,
+			testName: "notFound",
+			loggedIn: true,
+			taskID:   1,
+			title:    "task1",
 			updateFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID, _ usecase.UpdateTaskInput) (*usecase.Task, error) {
 				return nil, domain.ErrNotFound
 			},
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			testName:  "usecaseErrUnexpected",
-			loggedIn:  true,
-			taskIDStr: "1",
-			body:      `{"Title":"task1","Completed":false}`,
+			testName: "usecaseErrUnexpected",
+			loggedIn: true,
+			taskID:   1,
+			title:    "task1",
 			updateFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID, _ usecase.UpdateTaskInput) (*usecase.Task, error) {
 				return nil, domain.ErrUnexpected
 			},
@@ -274,40 +262,54 @@ func TestUpdateTask(t *testing.T) {
 		{
 			testName:  "success",
 			loggedIn:  true,
-			taskIDStr: "1",
-			body:      `{"Title":"task1","Completed":true}`,
+			taskID:    1,
+			title:     "task1",
+			completed: true,
 			updateFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID, _ usecase.UpdateTaskInput) (*usecase.Task, error) {
 				return &usecase.Task{ID: 1, Title: "task1", Completed: true, Labels: []*usecase.Label{}}, nil
 			},
 			wantStatus: http.StatusOK,
-			wantTask:   &usecase.Task{ID: 1, Title: "task1", Completed: true, Labels: []*usecase.Label{}},
+			wantTask:   &api.Task{Id: 1, Title: "task1", Completed: true, Labels: []api.Label{}},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodPut, tc.body)
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
-			}
-			c.SetPathValues(echo.PathValues{{Name: "id", Value: tc.taskIDStr}})
-
-			tcon := NewTaskController(&mockTaskUsecase{updateTaskFn: tc.updateFn})
-			if err := tcon.UpdateTask(c); err != nil {
-				t.Fatalf("task controller UpdateTask failed: %v", err)
+				ctx = contextWithUser(1)
 			}
 
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			th := NewTaskHandler(&mockTaskUsecase{updateTaskFn: tc.updateFn})
+			request := api.UpdateTaskRequestObject{
+				Id:   tc.taskID,
+				Body: &api.TaskUpdateInput{Title: tc.title, Completed: tc.completed, Labels: []int{}},
+			}
+			response, err := th.UpdateTask(ctx, request)
+			if err != nil {
+				t.Fatalf("task handler UpdateTask failed: %v", err)
 			}
 
-			if tc.wantTask != nil {
-				var output usecase.Task
-				if err := json.Unmarshal(rec.Body.Bytes(), &output); err != nil {
-					t.Fatalf("failed to unmarshal response body: %v", err)
+			switch tc.wantStatus {
+			case http.StatusOK:
+				got, ok := response.(api.UpdateTask200JSONResponse)
+				if !ok {
+					t.Fatalf("expected api.UpdateTask200JSONResponse; got %T", response)
 				}
-				if output.ID != tc.wantTask.ID || output.Title != tc.wantTask.Title || output.Completed != tc.wantTask.Completed {
-					t.Errorf("expected task %+v; got %+v", *tc.wantTask, output)
+				if got.Data.Id != tc.wantTask.Id || got.Data.Title != tc.wantTask.Title || got.Data.Completed != tc.wantTask.Completed {
+					t.Errorf("expected task %+v; got %+v", *tc.wantTask, got.Data)
+				}
+			case http.StatusBadRequest:
+				if _, ok := response.(api.UpdateTask400JSONResponse); !ok {
+					t.Fatalf("expected api.UpdateTask400JSONResponse; got %T", response)
+				}
+			case http.StatusNotFound:
+				if _, ok := response.(api.UpdateTask404JSONResponse); !ok {
+					t.Fatalf("expected api.UpdateTask404JSONResponse; got %T", response)
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.UpdateTask500JSONResponse); !ok {
+					t.Fatalf("expected api.UpdateTask500JSONResponse; got %T", response)
 				}
 			}
 		})
@@ -318,50 +320,44 @@ func TestDeleteTask(t *testing.T) {
 	tests := []struct {
 		testName   string
 		loggedIn   bool
-		taskIDStr  string
+		taskID     int
 		deleteFn   func(ctx context.Context, userID domain.UserID, taskID domain.TaskID) error
 		wantStatus int
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
 			loggedIn:   false,
-			taskIDStr:  "1",
+			taskID:     1,
 			wantStatus: http.StatusInternalServerError,
-		},
-		{
-			testName:   "getTaskIDFromParamError",
-			loggedIn:   true,
-			taskIDStr:  "abc",
-			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName:   "negativeTaskID",
 			loggedIn:   true,
-			taskIDStr:  "-1",
+			taskID:     -1,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			testName:  "notFound",
-			loggedIn:  true,
-			taskIDStr: "1",
+			testName: "notFound",
+			loggedIn: true,
+			taskID:   1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID) error {
 				return domain.ErrNotFound
 			},
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			testName:  "usecaseErrUnexpected",
-			loggedIn:  true,
-			taskIDStr: "1",
+			testName: "usecaseErrUnexpected",
+			loggedIn: true,
+			taskID:   1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID) error {
 				return domain.ErrUnexpected
 			},
 			wantStatus: http.StatusInternalServerError,
 		},
 		{
-			testName:  "success",
-			loggedIn:  true,
-			taskIDStr: "1",
+			testName: "success",
+			loggedIn: true,
+			taskID:   1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.TaskID) error {
 				return nil
 			},
@@ -371,19 +367,34 @@ func TestDeleteTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodDelete, "")
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
-			}
-			c.SetPathValues(echo.PathValues{{Name: "id", Value: tc.taskIDStr}})
-
-			tcon := NewTaskController(&mockTaskUsecase{deleteTaskFn: tc.deleteFn})
-			if err := tcon.DeleteTask(c); err != nil {
-				t.Fatalf("task controller DeleteTask failed: %v", err)
+				ctx = contextWithUser(1)
 			}
 
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			th := NewTaskHandler(&mockTaskUsecase{deleteTaskFn: tc.deleteFn})
+			response, err := th.DeleteTask(ctx, api.DeleteTaskRequestObject{Id: tc.taskID})
+			if err != nil {
+				t.Fatalf("task handler DeleteTask failed: %v", err)
+			}
+
+			switch tc.wantStatus {
+			case http.StatusNoContent:
+				if _, ok := response.(api.DeleteTask204Response); !ok {
+					t.Fatalf("expected api.DeleteTask204Response; got %T", response)
+				}
+			case http.StatusBadRequest:
+				if _, ok := response.(api.DeleteTask400JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteTask400JSONResponse; got %T", response)
+				}
+			case http.StatusNotFound:
+				if _, ok := response.(api.DeleteTask404JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteTask404JSONResponse; got %T", response)
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.DeleteTask500JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteTask500JSONResponse; got %T", response)
+				}
 			}
 		})
 	}

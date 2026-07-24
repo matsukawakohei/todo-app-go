@@ -8,10 +8,10 @@ import (
 )
 
 type Task struct {
-	ID        uint     `json:"id"`
-	Title     string   `json:"title"`
-	Completed bool     `json:"completed"`
-	Labels    []*Label `json:"labels"`
+	ID        uint
+	Title     string
+	Completed bool
+	Labels    []*Label
 }
 
 func fromTaskEntity(task *domain.Task) *Task {
@@ -28,7 +28,7 @@ func fromTaskEntity(task *domain.Task) *Task {
 }
 
 type GetAllTasksOutput struct {
-	Tasks []*Task `json:"tasks"`
+	Tasks []*Task
 }
 
 type CreateTaskInput struct {

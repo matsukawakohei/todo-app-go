@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/matsukawakohei/todo-app-go/controller"
 	"github.com/matsukawakohei/todo-app-go/db"
+	"github.com/matsukawakohei/todo-app-go/internal/handler"
 	"github.com/matsukawakohei/todo-app-go/middleware"
 	"github.com/matsukawakohei/todo-app-go/repository"
 	"github.com/matsukawakohei/todo-app-go/router"
@@ -56,19 +56,25 @@ func main() {
 	userRepository := repository.NewUserRepository(gormDB)
 	userValidator := usecase.NewUserValidator()
 	userUsecase := usecase.NewUserUsecase(userRepository, userValidator, secret)
-	userController := controller.NewUserController(userUsecase)
+	authHandler := handler.NewAuthHandler(userUsecase)
 
 	labelRepository := repository.NewLabelRepository(gormDB)
 	labelValidator := usecase.NewLabelValidator()
 	labelUsecase := usecase.NewLabelUsecase(labelRepository, labelValidator)
-	labelController := controller.NewLabelController(labelUsecase)
+	labelHandler := handler.NewLabelHandler(labelUsecase)
 
 	taskRepository := repository.NewTaskRepository(gormDB)
 	taskValidator := usecase.NewTaskValidator()
 	taskUsecase := usecase.NewTaskUsecase(taskRepository, taskValidator)
-	taskController := controller.NewTaskController(taskUsecase)
+	taskHandler := handler.NewTaskHandler(taskUsecase)
 
-	e := router.NewRouter(userController, labelController, taskController, frontURL, secret)
+	h := handler.Handler{
+		AuthHandler:  authHandler,
+		LabelHandler: labelHandler,
+		TaskHandler:  taskHandler,
+	}
+
+	e := router.NewRouter(h, frontURL, secret)
 
 	port := os.Getenv("API_PORT")
 	if port == "" {
