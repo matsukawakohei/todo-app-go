@@ -1,0 +1,3 @@
+[submodule "schema"]
+	path = schema
+	url = https://github.com/matsukawakohei/todo-app-schema.git
