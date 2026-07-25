@@ -4,6 +4,9 @@ reviews:
   profile: "assertive"
   request_changes_workflow: true
   high_level_summary: true
+  path_filters:
+    - "**"
+    - "!internal/api/api.gen.go"
   path_instructions:
     - path: "**/*.go"
       instructions: |

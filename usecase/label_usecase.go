@@ -8,8 +8,8 @@ import (
 )
 
 type Label struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID   uint
+	Name string
 }
 
 func fromLabelEntity(label *domain.Label) *Label {
@@ -20,7 +20,7 @@ func fromLabelEntity(label *domain.Label) *Label {
 }
 
 type LabelGetAllOutput struct {
-	Labels []*Label `json:"labels"`
+	Labels []*Label
 }
 
 type LabelCreateInput struct {

@@ -1,14 +1,12 @@
-package controller
+package handler
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/http"
 	"testing"
 
-	"github.com/labstack/echo/v5"
 	"github.com/matsukawakohei/todo-app-go/domain"
+	"github.com/matsukawakohei/todo-app-go/internal/api"
 	"github.com/matsukawakohei/todo-app-go/usecase"
 )
 
@@ -36,7 +34,7 @@ func TestGetAllLabels(t *testing.T) {
 		loggedIn         bool
 		getAllByUserIDFn func(ctx context.Context, userID domain.UserID) (*usecase.LabelGetAllOutput, error)
 		wantStatus       int
-		wantLabels       []*usecase.Label
+		wantLabels       []api.Label
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
@@ -58,7 +56,7 @@ func TestGetAllLabels(t *testing.T) {
 				return &usecase.LabelGetAllOutput{Labels: []*usecase.Label{}}, nil
 			},
 			wantStatus: http.StatusOK,
-			wantLabels: []*usecase.Label{},
+			wantLabels: []api.Label{},
 		},
 		{
 			testName: "success",
@@ -70,40 +68,42 @@ func TestGetAllLabels(t *testing.T) {
 				}}, nil
 			},
 			wantStatus: http.StatusOK,
-			wantLabels: []*usecase.Label{
-				{ID: 1, Name: "label1"},
-				{ID: 2, Name: "label2"},
+			wantLabels: []api.Label{
+				{Id: 1, Name: "label1"},
+				{Id: 2, Name: "label2"},
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodGet, "")
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
+				ctx = contextWithUser(1)
 			}
-			lc := NewLabelController(&mockLabelUsecase{getAllByUserIDFn: tc.getAllByUserIDFn})
-			if err := lc.GetAllLabels(c); err != nil {
-				t.Fatalf("label controller GetAllLabels failed: %v", err)
-			}
-
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			lh := NewLabelHandler(&mockLabelUsecase{getAllByUserIDFn: tc.getAllByUserIDFn})
+			response, err := lh.GetLabels(ctx, api.GetLabelsRequestObject{})
+			if err != nil {
+				t.Fatalf("label handler GetLabels failed: %v", err)
 			}
 
-			if tc.wantLabels != nil {
-				var output usecase.LabelGetAllOutput
-				if err := json.Unmarshal(rec.Body.Bytes(), &output); err != nil {
-					t.Fatalf("failed to unmarshal response body: %v", err)
+			switch tc.wantStatus {
+			case http.StatusOK:
+				got, ok := response.(api.GetLabels200JSONResponse)
+				if !ok {
+					t.Fatalf("expected api.GetLabels200JSONResponse; got %T", response)
 				}
-				if len(output.Labels) != len(tc.wantLabels) {
-					t.Fatalf("expected %d labels; got %d", len(tc.wantLabels), len(output.Labels))
+				if len(got.Data) != len(tc.wantLabels) {
+					t.Fatalf("expected %d labels; got %d", len(tc.wantLabels), len(got.Data))
 				}
-				for i, l := range output.Labels {
-					if *l != *tc.wantLabels[i] {
-						t.Errorf("expected label %+v; got %+v", *tc.wantLabels[i], *l)
+				for i, l := range got.Data {
+					if l != tc.wantLabels[i] {
+						t.Errorf("expected label %+v; got %+v", tc.wantLabels[i], l)
 					}
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.GetLabels500JSONResponse); !ok {
+					t.Fatalf("expected api.GetLabels500JSONResponse; got %T", response)
 				}
 			}
 		})
@@ -114,36 +114,30 @@ func TestCreateLabel(t *testing.T) {
 	tests := []struct {
 		testName   string
 		loggedIn   bool
-		body       string
+		name       string
 		createFn   func(ctx context.Context, userID domain.UserID, input usecase.LabelCreateInput) (*usecase.Label, error)
 		wantStatus int
-		wantLabel  *usecase.Label
+		wantLabel  *api.Label
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
 			loggedIn:   false,
-			body:       `{"Name":"label1"}`,
+			name:       "label1",
 			wantStatus: http.StatusInternalServerError,
-		},
-		{
-			testName:   "bindError",
-			loggedIn:   true,
-			body:       `{invalid}`,
-			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName: "validationError",
 			loggedIn: true,
-			body:     `{"Name":""}`,
+			name:     "",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
-				return nil, errors.New("Name: name is required.")
+				return nil, domain.ErrBadRequest
 			},
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName: "limitExceeded",
 			loggedIn: true,
-			body:     `{"Name":"label1"}`,
+			name:     "label1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
 				return nil, domain.ErrLimitExceeded
 			},
@@ -152,16 +146,16 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "userNotFound",
 			loggedIn: true,
-			body:     `{"Name":"label1"}`,
+			name:     "label1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
 				return nil, domain.ErrNotFound
 			},
-			wantStatus: http.StatusNotFound,
+			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName: "duplicatedKey",
 			loggedIn: true,
-			body:     `{"Name":"label1"}`,
+			name:     "label1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
 				return nil, domain.ErrDuplicatedKey
 			},
@@ -170,7 +164,7 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "usecaseErrUnexpected",
 			loggedIn: true,
-			body:     `{"Name":"label1"}`,
+			name:     "label1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
 				return nil, domain.ErrUnexpected
 			},
@@ -179,37 +173,44 @@ func TestCreateLabel(t *testing.T) {
 		{
 			testName: "success",
 			loggedIn: true,
-			body:     `{"Name":"label1"}`,
+			name:     "label1",
 			createFn: func(_ context.Context, _ domain.UserID, _ usecase.LabelCreateInput) (*usecase.Label, error) {
 				return &usecase.Label{ID: 1, Name: "label1"}, nil
 			},
 			wantStatus: http.StatusCreated,
-			wantLabel:  &usecase.Label{ID: 1, Name: "label1"},
+			wantLabel:  &api.Label{Id: 1, Name: "label1"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodPost, tc.body)
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
+				ctx = contextWithUser(1)
 			}
-			lc := NewLabelController(&mockLabelUsecase{createFn: tc.createFn})
-			if err := lc.CreateLabel(c); err != nil {
-				t.Fatalf("label controller CreateLabel failed: %v", err)
-			}
-
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			lh := NewLabelHandler(&mockLabelUsecase{createFn: tc.createFn})
+			request := api.CreateLabelRequestObject{Body: &api.LabelInput{Name: tc.name}}
+			response, err := lh.CreateLabel(ctx, request)
+			if err != nil {
+				t.Fatalf("label handler CreateLabel failed: %v", err)
 			}
 
-			if tc.wantLabel != nil {
-				var output usecase.Label
-				if err := json.Unmarshal(rec.Body.Bytes(), &output); err != nil {
-					t.Fatalf("failed to unmarshal response body: %v", err)
+			switch tc.wantStatus {
+			case http.StatusCreated:
+				got, ok := response.(api.CreateLabel201JSONResponse)
+				if !ok {
+					t.Fatalf("expected api.CreateLabel201JSONResponse; got %T", response)
 				}
-				if output != *tc.wantLabel {
-					t.Errorf("expected label %+v; got %+v", *tc.wantLabel, output)
+				if got.Data != *tc.wantLabel {
+					t.Errorf("expected label %+v; got %+v", *tc.wantLabel, got.Data)
+				}
+			case http.StatusBadRequest:
+				if _, ok := response.(api.CreateLabel400JSONResponse); !ok {
+					t.Fatalf("expected api.CreateLabel400JSONResponse; got %T", response)
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.CreateLabel500JSONResponse); !ok {
+					t.Fatalf("expected api.CreateLabel500JSONResponse; got %T", response)
 				}
 			}
 		})
@@ -220,50 +221,44 @@ func TestDeleteLabel(t *testing.T) {
 	tests := []struct {
 		testName   string
 		loggedIn   bool
-		labelIDStr string
+		labelID    int
 		deleteFn   func(ctx context.Context, userID domain.UserID, labelID domain.LabelID) error
 		wantStatus int
 	}{
 		{
 			testName:   "getLoginUserFromContextError",
 			loggedIn:   false,
-			labelIDStr: "1",
+			labelID:    1,
 			wantStatus: http.StatusInternalServerError,
-		},
-		{
-			testName:   "getLabelIDFromParamError",
-			loggedIn:   true,
-			labelIDStr: "abc",
-			wantStatus: http.StatusBadRequest,
 		},
 		{
 			testName:   "negativeLabelID",
 			loggedIn:   true,
-			labelIDStr: "-1",
+			labelID:    -1,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			testName:   "notFound",
-			loggedIn:   true,
-			labelIDStr: "1",
+			testName: "notFound",
+			loggedIn: true,
+			labelID:  1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.LabelID) error {
 				return domain.ErrNotFound
 			},
 			wantStatus: http.StatusNotFound,
 		},
 		{
-			testName:   "usecaseErrUnexpected",
-			loggedIn:   true,
-			labelIDStr: "1",
+			testName: "usecaseErrUnexpected",
+			loggedIn: true,
+			labelID:  1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.LabelID) error {
 				return domain.ErrUnexpected
 			},
 			wantStatus: http.StatusInternalServerError,
 		},
 		{
-			testName:   "success",
-			loggedIn:   true,
-			labelIDStr: "1",
+			testName: "success",
+			loggedIn: true,
+			labelID:  1,
 			deleteFn: func(_ context.Context, _ domain.UserID, _ domain.LabelID) error {
 				return nil
 			},
@@ -273,19 +268,34 @@ func TestDeleteLabel(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			c, rec := newTestContext(http.MethodDelete, "")
+			ctx := context.Background()
 			if tc.loggedIn {
-				setLoginUser(c, 1)
-			}
-			c.SetPathValues(echo.PathValues{{Name: "id", Value: tc.labelIDStr}})
-
-			lc := NewLabelController(&mockLabelUsecase{deleteFn: tc.deleteFn})
-			if err := lc.DeleteLabel(c); err != nil {
-				t.Fatalf("label controller DeleteLabel failed: %v", err)
+				ctx = contextWithUser(1)
 			}
 
-			if rec.Code != tc.wantStatus {
-				t.Errorf("expected status %d; got %d", tc.wantStatus, rec.Code)
+			lh := NewLabelHandler(&mockLabelUsecase{deleteFn: tc.deleteFn})
+			response, err := lh.DeleteLabel(ctx, api.DeleteLabelRequestObject{Id: tc.labelID})
+			if err != nil {
+				t.Fatalf("label handler DeleteLabel failed: %v", err)
+			}
+
+			switch tc.wantStatus {
+			case http.StatusNoContent:
+				if _, ok := response.(api.DeleteLabel204Response); !ok {
+					t.Fatalf("expected api.DeleteLabel204Response; got %T", response)
+				}
+			case http.StatusBadRequest:
+				if _, ok := response.(api.DeleteLabel400JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteLabel400JSONResponse; got %T", response)
+				}
+			case http.StatusNotFound:
+				if _, ok := response.(api.DeleteLabel404JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteLabel404JSONResponse; got %T", response)
+				}
+			case http.StatusInternalServerError:
+				if _, ok := response.(api.DeleteLabel500JSONResponse); !ok {
+					t.Fatalf("expected api.DeleteLabel500JSONResponse; got %T", response)
+				}
 			}
 		})
 	}

@@ -57,3 +57,6 @@ lint-fix:
 
 action-lint:
 	docker run --rm -v "$(CURDIR):$(CURDIR)" -w "$(shell pwd)" rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+
+code-gen:
+	go tool oapi-codegen -config internal/api/codegen_config.yaml schema/index.yaml

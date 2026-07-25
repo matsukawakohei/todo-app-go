@@ -1,0 +1,8 @@
+package: api
+
+generate:
+  models: true
+  echo5-server: true
+  strict-server: true
+
+output: internal/api/api.gen.go
