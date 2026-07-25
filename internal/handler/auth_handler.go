@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/matsukawakohei/todo-app-go/domain"
 	"github.com/matsukawakohei/todo-app-go/internal/api"
 	"github.com/matsukawakohei/todo-app-go/usecase"
 	"github.com/oapi-codegen/runtime/types"
@@ -58,6 +60,10 @@ func (r logoutResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 }
 
 func (ah *AuthHandler) Signup(ctx context.Context, request api.SignupRequestObject) (api.SignupResponseObject, error) {
+	if request.Body == nil {
+		slog.ErrorContext(ctx, "request body is nil")
+		return api.Signup400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
+	}
 	input := usecase.SignUpInput{
 		Name:     request.Body.Name,
 		Email:    string(request.Body.Email),
@@ -82,6 +88,11 @@ func (ah *AuthHandler) Signup(ctx context.Context, request api.SignupRequestObje
 }
 
 func (ah *AuthHandler) Login(ctx context.Context, request api.LoginRequestObject) (api.LoginResponseObject, error) {
+	if request.Body == nil {
+		slog.ErrorContext(ctx, "request body is nil")
+		return api.Login400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
+	}
+	
 	input := usecase.LoginInput{
 		Email:    string(request.Body.Email),
 		Password: request.Body.Password,

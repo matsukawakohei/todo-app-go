@@ -60,6 +60,11 @@ func (th *TaskHandler) GetTasks(ctx context.Context, _ api.GetTasksRequestObject
 }
 
 func (th *TaskHandler) CreateTask(ctx context.Context, request api.CreateTaskRequestObject) (api.CreateTaskResponseObject, error) {
+	if request.Body == nil {
+		slog.ErrorContext(ctx, "request body is nil")
+		return api.CreateTask400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
+	}
+	
 	userID, err := getLoginUserFromContext(ctx)
 	if err != nil {
 		return api.CreateTask500JSONResponse{Error: err.Error()}, nil
@@ -82,6 +87,10 @@ func (th *TaskHandler) CreateTask(ctx context.Context, request api.CreateTaskReq
 }
 
 func (th *TaskHandler) UpdateTask(ctx context.Context, request api.UpdateTaskRequestObject) (api.UpdateTaskResponseObject, error) {
+	if request.Body == nil {
+		slog.ErrorContext(ctx, "request body is nil")
+		return api.UpdateTask400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
+	}
 	userID, err := getLoginUserFromContext(ctx)
 	if err != nil {
 		return api.UpdateTask500JSONResponse{Error: err.Error()}, nil

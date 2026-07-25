@@ -45,6 +45,10 @@ func (lh *LabelHandler) GetLabels(ctx context.Context, _ api.GetLabelsRequestObj
 }
 
 func (lh *LabelHandler) CreateLabel(ctx context.Context, request api.CreateLabelRequestObject) (api.CreateLabelResponseObject, error) {
+	if request.Body == nil {
+		slog.ErrorContext(ctx, "request body is nil")
+		return api.CreateLabel400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
+	}
 	userID, err := getLoginUserFromContext(ctx)
 	if err != nil {
 		return api.CreateLabel500JSONResponse{Error: err.Error()}, nil
