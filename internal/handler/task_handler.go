@@ -67,7 +67,7 @@ func (th *TaskHandler) CreateTask(ctx context.Context, request api.CreateTaskReq
 		slog.ErrorContext(ctx, "request body is nil")
 		return api.CreateTask400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
 	}
-	
+
 	userID, err := getLoginUserFromContext(ctx)
 	if err != nil {
 		return api.CreateTask500JSONResponse{Error: err.Error()}, nil

@@ -92,7 +92,7 @@ func (ah *AuthHandler) Login(ctx context.Context, request api.LoginRequestObject
 		slog.ErrorContext(ctx, "request body is nil")
 		return api.Login400JSONResponse{Error: domain.ErrBadRequest.Error()}, nil
 	}
-	
+
 	input := usecase.LoginInput{
 		Email:    string(request.Body.Email),
 		Password: request.Body.Password,
