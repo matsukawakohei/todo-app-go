@@ -80,6 +80,9 @@ func errorStatus(err error) int {
 	if errors.Is(err, domain.ErrLimitExceeded) {
 		return http.StatusBadRequest
 	}
+	if errors.Is(err, domain.ErrBadRequest) {
+		return http.StatusBadRequest
+	}
 
-	return http.StatusBadRequest
+	return http.StatusInternalServerError
 }
