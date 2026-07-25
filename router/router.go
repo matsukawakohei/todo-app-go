@@ -51,28 +51,29 @@ func NewRouter(ssi api.StrictServerInterface, frontURL string, secret string) *e
 		CookieSecure:   handler.CookieSecure(),
 	}))
 
+	authMiddleware := AuthMiddleware(secret)
 	options := api.RegisterHandlersOptions{
 		OperationMiddlewares: map[string][]echo.MiddlewareFunc{
 			"getLabels": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"createLabel": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"deleteLabel": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"getTasks": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"createTask": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"updateTask": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 			"deleteTask": {
-				AuthMiddleware(secret),
+				authMiddleware,
 			},
 		},
 	}
