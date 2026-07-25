@@ -52,7 +52,7 @@ func TestSignUp(t *testing.T) {
 		{
 			testName:     "success",
 			input:        SignUpInput{Name: "テスト", Email: "test@example.com", Password: "Password1234"},
-			repoUser:     &domain.User{ID: 1, Email: "test@example.com"},
+			repoUser:     &domain.User{ID: 1, Email: "test@example.com", Name: "テスト"},
 			wantOutputID: 1,
 		},
 		{
@@ -144,7 +144,7 @@ func TestLogin(t *testing.T) {
 			testName: "success",
 			secret:   "test-secret",
 			input:    LoginInput{Email: "test@example.com", Password: rawPassword},
-			repoUser: &domain.User{ID: 1, Email: "test@example.com", Password: hashedPassword},
+			repoUser: &domain.User{ID: 1, Name: "テスト", Email: "test@example.com", Password: hashedPassword},
 		},
 		{
 			testName:    "validationError",
