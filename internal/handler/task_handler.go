@@ -35,6 +35,9 @@ func toTaskResponse(task *usecase.Task) api.Task {
 func toLabelIDs(ids []int) []uint {
 	labelIDs := make([]uint, 0, len(ids))
 	for _, id := range ids {
+		if id < 0 {
+			continue
+		}
 		labelIDs = append(labelIDs, uint(id))
 	}
 	return labelIDs
