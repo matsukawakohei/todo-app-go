@@ -450,7 +450,7 @@ func (response Me200JSONResponse) VisitMeResponse(w http.ResponseWriter) error {
 	return err
 }
 
-type Me401JSONResponse ErrorOutput
+type Me401JSONResponse UnauthorizedErrorOutput
 
 func (response Me401JSONResponse) VisitMeResponse(w http.ResponseWriter) error {
 
