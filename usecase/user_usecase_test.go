@@ -16,6 +16,7 @@ const testSecret = "test secret"
 type mockUserRepository struct {
 	createUserFn     func(ctx context.Context, user domain.CreateUser) (*domain.User, error)
 	getUserByEmailFn func(ctx context.Context, email string) (*domain.User, error)
+	getUserByIDFn    func(ctx context.Context, id domain.UserID) (*domain.User, error)
 }
 
 func (m *mockUserRepository) CreateUser(ctx context.Context, user domain.CreateUser) (*domain.User, error) {
@@ -24,6 +25,10 @@ func (m *mockUserRepository) CreateUser(ctx context.Context, user domain.CreateU
 
 func (m *mockUserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	return m.getUserByEmailFn(ctx, email)
+}
+
+func (m *mockUserRepository) GetUserByID(ctx context.Context, userID domain.UserID) (*domain.User, error) {
+	return m.getUserByIDFn(ctx, userID)
 }
 
 type mockUserValidator struct {
