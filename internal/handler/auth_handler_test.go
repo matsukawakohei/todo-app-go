@@ -247,19 +247,18 @@ func TestLogout(t *testing.T) {
 
 func TestMe(t *testing.T) {
 	tests := []struct {
-		testName      string
-		getUserByIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error)
-		wantStatus    int
-		wantUser      *api.User
+		testName   string
+		mockOutput *usecase.GetUserByIDOutput
+		mockErr    error
+		wantStatus int
+		wantUser   *api.User
 	}{
 		{
 			testName: "success",
-			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
-				return &usecase.GetUserByIDOutput{
-					ID:    1,
-					Name:  "test",
-					Email: "test1@example.com",
-				}, nil
+			mockOutput: &usecase.GetUserByIDOutput{
+				ID:    1,
+				Name:  "test",
+				Email: "test1@example.com",
 			},
 			wantStatus: http.StatusOK,
 			wantUser: &api.User{
@@ -269,33 +268,36 @@ func TestMe(t *testing.T) {
 			},
 		},
 		{
-			testName: "notFound",
-			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
-				return nil, domain.ErrNotFound
-			},
+			testName:   "notFound",
+			mockErr:    domain.ErrNotFound,
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
-			testName: "internalServerError",
-			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
-				return nil, domain.ErrUnexpected
-			},
+			testName:   "internalServerError",
+			mockErr:    domain.ErrUnexpected,
 			wantStatus: http.StatusInternalServerError,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
+			var gotUserID domain.UserID
 			ctx := contextWithUser(1)
 			ah := &AuthHandler{
 				uu: &mockUserUsecase{
-					getUserByIDFn: tc.getUserByIDFn,
+					getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+						gotUserID = userID
+						return tc.mockOutput, tc.mockErr
+					},
 				},
 			}
 
 			output, err := ah.Me(ctx, api.MeRequestObject{})
 			if err != nil {
 				t.Fatalf("want err nil; but got %v", err)
+			}
+			if gotUserID != 1 {
+				t.Errorf("want user ID 1; but got %d", gotUserID)
 			}
 
 			switch tc.wantStatus {
