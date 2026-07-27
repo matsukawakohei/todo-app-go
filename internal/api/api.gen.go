@@ -52,6 +52,11 @@ type LoginOutput struct {
 	Data User `json:"data"`
 }
 
+// MeOutput defines model for MeOutput.
+type MeOutput struct {
+	Data User `json:"data"`
+}
+
 // SignupInput defines model for SignupInput.
 type SignupInput struct {
 	Email    openapi_types.Email `json:"email"`
@@ -130,6 +135,9 @@ type ServerInterface interface {
 	// Logout ログアウト
 	// (POST /api/v1/auth/logout)
 	Logout(ctx *echo.Context) error
+	// Me ログイン中の判定
+	// (POST /api/v1/auth/me)
+	Me(ctx *echo.Context) error
 	// Signup サインアップ
 	// (POST /api/v1/auth/signup)
 	Signup(ctx *echo.Context) error
@@ -176,6 +184,15 @@ func (w *ServerInterfaceWrapper) Logout(ctx *echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.Logout(ctx)
+	return err
+}
+
+// Me converts echo context to params.
+func (w *ServerInterfaceWrapper) Me(ctx *echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.Me(ctx)
 	return err
 }
 
@@ -322,6 +339,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/api/v1/auth/signup", wrapper.Signup, options.OperationMiddlewares["signup"]...)
 	router.POST(options.BaseURL+"/api/v1/auth/login", wrapper.Login, options.OperationMiddlewares["login"]...)
 	router.POST(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout, options.OperationMiddlewares["logout"]...)
+	router.POST(options.BaseURL+"/api/v1/auth/me", wrapper.Me, options.OperationMiddlewares["me"]...)
 	router.GET(options.BaseURL+"/api/v1/labels", wrapper.GetLabels, options.OperationMiddlewares["getLabels"]...)
 	router.POST(options.BaseURL+"/api/v1/labels", wrapper.CreateLabel, options.OperationMiddlewares["createLabel"]...)
 	router.DELETE(options.BaseURL+"/api/v1/labels/:id", wrapper.DeleteLabel, options.OperationMiddlewares["deleteLabel"]...)
@@ -409,6 +427,55 @@ type Logout200Response struct {
 func (response Logout200Response) VisitLogoutResponse(w http.ResponseWriter) error {
 	w.WriteHeader(200)
 	return nil
+}
+
+type MeRequestObject struct {
+}
+
+type MeResponseObject interface {
+	VisitMeResponse(w http.ResponseWriter) error
+}
+
+type Me200JSONResponse MeOutput
+
+func (response Me200JSONResponse) VisitMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Me401JSONResponse ErrorOutput
+
+func (response Me401JSONResponse) VisitMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Me500JSONResponse ErrorOutput
+
+func (response Me500JSONResponse) VisitMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type SignupRequestObject struct {
@@ -918,6 +985,9 @@ type StrictServerInterface interface {
 	// Logout ログアウト
 	// (POST /api/v1/auth/logout)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// Me ログイン中の判定
+	// (POST /api/v1/auth/me)
+	Me(ctx context.Context, request MeRequestObject) (MeResponseObject, error)
 	// Signup サインアップ
 	// (POST /api/v1/auth/signup)
 	Signup(ctx context.Context, request SignupRequestObject) (SignupResponseObject, error)
@@ -1012,6 +1082,29 @@ func (sh *strictHandler) Logout(ctx *echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(LogoutResponseObject); ok {
 		return validResponse.VisitLogoutResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// Me operation middleware
+func (sh *strictHandler) Me(ctx *echo.Context) error {
+	var request MeRequestObject
+
+	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.Me(ctx.Request().Context(), request.(MeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Me")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(MeResponseObject); ok {
+		return validResponse.VisitMeResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
