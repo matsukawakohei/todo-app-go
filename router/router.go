@@ -75,6 +75,9 @@ func NewRouter(ssi api.StrictServerInterface, frontURL string, secret string) *e
 			"deleteTask": {
 				authMiddleware,
 			},
+			"me": {
+				authMiddleware,
+			},
 		},
 	}
 

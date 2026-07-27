@@ -13,8 +13,9 @@ import (
 )
 
 type mockUserUsecase struct {
-	signUpFn func(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error)
-	loginFn  func(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error)
+	signUpFn      func(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error)
+	loginFn       func(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error)
+	getUserByIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error)
 }
 
 func (m *mockUserUsecase) SignUp(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error) {
@@ -23,6 +24,10 @@ func (m *mockUserUsecase) SignUp(ctx context.Context, input usecase.SignUpInput)
 
 func (m *mockUserUsecase) Login(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error) {
 	return m.loginFn(ctx, input)
+}
+
+func (m *mockUserUsecase) GetUserByID(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+	return m.getUserByIDFn(ctx, userID)
 }
 
 func TestSignUp(t *testing.T) {
@@ -237,5 +242,84 @@ func TestLogout(t *testing.T) {
 	}
 	if !tokenFound {
 		t.Errorf("expected cookie 'token' to be cleared")
+	}
+}
+
+func TestMe(t *testing.T) {
+	tests := []struct {
+		testName   string
+		mockOutput *usecase.GetUserByIDOutput
+		mockErr    error
+		wantStatus int
+		wantUser   *api.User
+	}{
+		{
+			testName: "success",
+			mockOutput: &usecase.GetUserByIDOutput{
+				ID:    1,
+				Name:  "test",
+				Email: "test1@example.com",
+			},
+			wantStatus: http.StatusOK,
+			wantUser: &api.User{
+				Id:    1,
+				Name:  "test",
+				Email: "test1@example.com",
+			},
+		},
+		{
+			testName:   "notFound",
+			mockErr:    domain.ErrNotFound,
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			testName:   "internalServerError",
+			mockErr:    domain.ErrUnexpected,
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			var gotUserID domain.UserID
+			ctx := contextWithUser(1)
+			ah := &AuthHandler{
+				uu: &mockUserUsecase{
+					getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+						gotUserID = userID
+						return tc.mockOutput, tc.mockErr
+					},
+				},
+			}
+
+			output, err := ah.Me(ctx, api.MeRequestObject{})
+			if err != nil {
+				t.Fatalf("want err nil; but got %v", err)
+			}
+			if gotUserID != 1 {
+				t.Errorf("want user ID 1; but got %d", gotUserID)
+			}
+
+			switch tc.wantStatus {
+			case http.StatusOK:
+				got, ok := output.(api.Me200JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me200JSONResponse; got %T", output)
+				}
+				if tc.wantUser != nil && got.Data != *tc.wantUser {
+					t.Errorf("want output %+v; but got %+v", tc.wantUser, got.Data)
+				}
+			case http.StatusUnauthorized:
+				_, ok := output.(api.Me401JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me401JSONResponse; got %T", output)
+				}
+			case http.StatusInternalServerError:
+				_, ok := output.(api.Me500JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me500JSONResponse; got %T", output)
+				}
+			}
+		})
 	}
 }

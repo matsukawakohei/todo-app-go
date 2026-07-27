@@ -72,3 +72,16 @@ func (ur *userRepository) CreateUser(ctx context.Context, user domain.CreateUser
 
 	return userModel.toEntity(), nil
 }
+
+func (ur *userRepository) GetUserByID(ctx context.Context, userID domain.UserID) (*domain.User, error) {
+	userModel := userModel{}
+	if err := ur.db.WithContext(ctx).First(&userModel, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrNotFound
+		}
+		slog.ErrorContext(ctx, "GetUserByID: failed to get user by id", "error", err)
+		return nil, domain.ErrUnexpected
+	}
+
+	return userModel.toEntity(), nil
+}

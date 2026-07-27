@@ -159,3 +159,65 @@ func TestCreateUser(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUserByID(t *testing.T) {
+	tests := []struct {
+		testName  string
+		userID    domain.UserID
+		seedUser  *userModel
+		wantUser  *domain.User
+		wantErr   bool
+		wantErrIs error
+	}{
+		{
+			testName: "success",
+			userID:   1,
+			seedUser: &userModel{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantUser: &domain.User{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantErr:  false,
+		},
+		{
+			testName:  "notFound",
+			userID:    1,
+			wantErr:   true,
+			wantErrIs: domain.ErrNotFound,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			runInTx(t, func(tx *gorm.DB) {
+				if tc.seedUser != nil {
+					if err := tx.Create(tc.seedUser).Error; err != nil {
+						t.Fatalf("failed create user err: %v", err)
+					}
+				}
+
+				repo := NewUserRepository(tx)
+				got, err := repo.GetUserByID(t.Context(), tc.userID)
+				if tc.wantErr {
+					if err == nil {
+						t.Fatalf("want err is not nil; but got nil")
+					}
+					if !errors.Is(err, tc.wantErrIs) {
+						t.Errorf("want err %v; but got %v", tc.wantErrIs, err)
+					}
+					return
+				}
+
+				if err != nil {
+					t.Fatalf("want err is nill; but got %v", err)
+				}
+				if got.ID != tc.wantUser.ID {
+					t.Errorf("want user.ID %v;but got %v", tc.wantUser.ID, got.ID)
+				}
+				if got.Name != tc.wantUser.Name {
+					t.Errorf("want user.Name %v; but got %v", tc.wantUser.Name, got.Name)
+				}
+				if got.Email != tc.wantUser.Email {
+					t.Errorf("want user.Email %v; but got %v", tc.wantUser.Email, got.Email)
+				}
+			})
+		})
+	}
+}

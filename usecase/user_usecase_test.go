@@ -16,6 +16,7 @@ const testSecret = "test secret"
 type mockUserRepository struct {
 	createUserFn     func(ctx context.Context, user domain.CreateUser) (*domain.User, error)
 	getUserByEmailFn func(ctx context.Context, email string) (*domain.User, error)
+	getUserByIDFn    func(ctx context.Context, id domain.UserID) (*domain.User, error)
 }
 
 func (m *mockUserRepository) CreateUser(ctx context.Context, user domain.CreateUser) (*domain.User, error) {
@@ -24,6 +25,10 @@ func (m *mockUserRepository) CreateUser(ctx context.Context, user domain.CreateU
 
 func (m *mockUserRepository) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	return m.getUserByEmailFn(ctx, email)
+}
+
+func (m *mockUserRepository) GetUserByID(ctx context.Context, userID domain.UserID) (*domain.User, error) {
+	return m.getUserByIDFn(ctx, userID)
 }
 
 type mockUserValidator struct {
@@ -235,6 +240,70 @@ func TestLogin(t *testing.T) {
 			}
 			if output.Email != tc.repoUser.Email {
 				t.Errorf("expect output.Email is %s; but got %s", tc.repoUser.Email, output.Email)
+			}
+		})
+	}
+}
+
+func TestGetUserByID(t *testing.T) {
+	tests := []struct {
+		testName   string
+		userID     domain.UserID
+		repoUser   *domain.User
+		repoErr    error
+		wantOutput *GetUserByIDOutput
+		wantErr    bool
+		wantErrIs  error
+	}{
+		{
+			testName:   "success",
+			userID:     1,
+			repoUser:   &domain.User{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantOutput: &GetUserByIDOutput{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantErr:    false,
+		},
+		{
+			testName: "notFound",
+			userID:   1,
+			repoErr:  domain.ErrNotFound,
+			wantErr:  true,
+		},
+		{
+			testName: "internalServerError",
+			userID:   1,
+			repoErr:  domain.ErrUnexpected,
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			mockRepo := &mockUserRepository{
+				getUserByIDFn: func(ctx context.Context, id domain.UserID) (*domain.User, error) {
+					return tc.repoUser, tc.repoErr
+				},
+			}
+			mockValidator := &mockUserValidator{}
+
+			uu := NewUserUsecase(mockRepo, mockValidator, "test")
+
+			got, err := uu.GetUserByID(t.Context(), tc.userID)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("err want not nil; but got nil")
+				}
+				if !errors.Is(err, tc.repoErr) {
+					t.Errorf("want err is %v; but got %v", tc.repoErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("want err is nil; but got %v", err)
+			}
+
+			if tc.wantOutput != nil && *got != *tc.wantOutput {
+				t.Errorf("want output %+v; but got %+v", tc.wantOutput, got)
 			}
 		})
 	}
