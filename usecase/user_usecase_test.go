@@ -244,3 +244,67 @@ func TestLogin(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUserByID(t *testing.T) {
+	tests := []struct {
+		testName   string
+		userID     domain.UserID
+		repoUser   *domain.User
+		repoErr    error
+		wantOutput *GetUserByIDOutput
+		wantErr    bool
+		wantErrIs  error
+	}{
+		{
+			testName:   "success",
+			userID:     1,
+			repoUser:   &domain.User{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantOutput: &GetUserByIDOutput{ID: 1, Name: "test", Email: "test1@example.com"},
+			wantErr:    false,
+		},
+		{
+			testName: "notFound",
+			userID:   1,
+			repoErr:  domain.ErrNotFound,
+			wantErr:  true,
+		},
+		{
+			testName: "internalServerError",
+			userID:   1,
+			repoErr:  domain.ErrUnexpected,
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			mockRepo := &mockUserRepository{
+				getUserByIDFn: func(ctx context.Context, id domain.UserID) (*domain.User, error) {
+					return tc.repoUser, tc.repoErr
+				},
+			}
+			mockValidator := &mockUserValidator{}
+
+			uu := NewUserUsecase(mockRepo, mockValidator, "test")
+
+			got, err := uu.GetUserByID(t.Context(), tc.userID)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("err want not nil; but got nil")
+				}
+				if !errors.Is(err, tc.repoErr) {
+					t.Errorf("want err is %v; but got %v", tc.repoErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("want err is nil; but got %v", err)
+			}
+
+			if tc.wantOutput != nil && *got != *tc.wantOutput {
+				t.Errorf("want output %+v; but got %+v", tc.wantOutput, got)
+			}
+		})
+	}
+}

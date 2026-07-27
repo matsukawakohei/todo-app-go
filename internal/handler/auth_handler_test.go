@@ -13,8 +13,9 @@ import (
 )
 
 type mockUserUsecase struct {
-	signUpFn func(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error)
-	loginFn  func(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error)
+	signUpFn      func(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error)
+	loginFn       func(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error)
+	getUserByIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error)
 }
 
 func (m *mockUserUsecase) SignUp(ctx context.Context, input usecase.SignUpInput) (*usecase.SignUpOutput, error) {
@@ -23,6 +24,10 @@ func (m *mockUserUsecase) SignUp(ctx context.Context, input usecase.SignUpInput)
 
 func (m *mockUserUsecase) Login(ctx context.Context, input usecase.LoginInput) (*usecase.LoginOutput, error) {
 	return m.loginFn(ctx, input)
+}
+
+func (m *mockUserUsecase) GetUserByID(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+	return m.getUserByIDFn(ctx, userID)
 }
 
 func TestSignUp(t *testing.T) {

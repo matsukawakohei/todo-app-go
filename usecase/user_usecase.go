@@ -42,9 +42,16 @@ type LoginOutput struct {
 	Token string
 }
 
+type GetUserByIDOutput struct {
+	ID    uint
+	Name  string
+	Email string
+}
+
 type UserUsecase interface {
 	SignUp(ctx context.Context, input SignUpInput) (*SignUpOutput, error)
 	Login(ctx context.Context, input LoginInput) (*LoginOutput, error)
+	GetUserByID(ctx context.Context, userID domain.UserID) (*GetUserByIDOutput, error)
 }
 
 type userUsecase struct {
@@ -116,4 +123,19 @@ func (uu *userUsecase) Login(ctx context.Context, input LoginInput) (*LoginOutpu
 	}
 
 	return &output, nil
+}
+
+func (uu *userUsecase) GetUserByID(ctx context.Context, userID domain.UserID) (*GetUserByIDOutput, error) {
+	user, err := uu.ur.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	output := GetUserByIDOutput{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	return &output, err
 }
