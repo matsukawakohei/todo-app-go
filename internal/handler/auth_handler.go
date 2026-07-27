@@ -130,3 +130,28 @@ func (ah *AuthHandler) Logout(_ context.Context, _ api.LogoutRequestObject) (api
 
 	return logoutResponse{cookie: cookie}, nil
 }
+
+func (ah AuthHandler) Me(ctx context.Context, _ api.MeRequestObject) (api.MeResponseObject, error) {
+	userID, err := getLoginUserFromContext(ctx)
+	if err != nil {
+		return api.Me500JSONResponse{Error: err.Error()}, nil
+	}
+
+	output, err := ah.uu.GetUserByID(ctx, domain.UserID(userID))
+	if err != nil {
+		switch errorStatus(err) {
+		case http.StatusNotFound:
+			return api.Me401JSONResponse{Message: err.Error()}, nil
+		default:
+			return api.Me500JSONResponse{Error: err.Error()}, nil
+		}
+	}
+
+	user := api.User{
+		Id: int(output.ID),
+		Name: output.Name,
+		Email: types.Email(output.Email),
+	}
+
+	return api.Me200JSONResponse{Data: user}, nil
+}

@@ -244,3 +244,81 @@ func TestLogout(t *testing.T) {
 		t.Errorf("expected cookie 'token' to be cleared")
 	}
 }
+
+func TestMe(t *testing.T) {
+	tests := []struct{
+		testName string
+		getUserByIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error)
+		wantStatus int
+		wantUser *api.User
+	}{
+		{
+			testName: "success",
+			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+				return &usecase.GetUserByIDOutput{
+					ID: 1,
+					Name: "test",
+					Email: "test1@example.com",
+				}, nil
+			},
+			wantStatus: http.StatusOK,
+			wantUser: &api.User{
+				Id: 1,
+				Name: "test",
+				Email: "test1@example.com",
+			},
+		},
+		{
+			testName: "notFound",
+			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+				return nil, domain.ErrNotFound
+			},
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			testName: "internalServerError",
+			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
+				return nil, domain.ErrUnexpected
+			},
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			ctx := t.Context()
+			ctx = contextWithUser(1)
+			ah := &AuthHandler{
+				uu: &mockUserUsecase{
+					getUserByIDFn: tc.getUserByIDFn,
+				},
+			}
+
+			output, err := ah.Me(ctx, api.MeRequestObject{})
+			if err != nil {
+				t.Fatalf("want err nil; but got %v", err)
+			}
+
+			switch tc.wantStatus {
+			case http.StatusOK:
+				got, ok := output.(api.Me200JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me200JSONResponse; got %T", output)
+				}
+				if tc.wantUser != nil && got.Data != *tc.wantUser {
+					t.Errorf("want output %+v; but got %+v", tc.wantUser, got.Data)
+				}
+			case http.StatusUnauthorized:
+				_, ok := output.(api.Me401JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me401JSONResponse; got %T", output)
+				}
+			case http.StatusInternalServerError:
+				_, ok := output.(api.Me500JSONResponse)
+				if !ok {
+					t.Fatalf("want api.Me500JSONResponse; got %T", output)
+				}
+			}
+		})
+	}
+}
