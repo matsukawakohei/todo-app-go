@@ -246,25 +246,25 @@ func TestLogout(t *testing.T) {
 }
 
 func TestMe(t *testing.T) {
-	tests := []struct{
-		testName string
+	tests := []struct {
+		testName      string
 		getUserByIDFn func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error)
-		wantStatus int
-		wantUser *api.User
+		wantStatus    int
+		wantUser      *api.User
 	}{
 		{
 			testName: "success",
 			getUserByIDFn: func(ctx context.Context, userID domain.UserID) (*usecase.GetUserByIDOutput, error) {
 				return &usecase.GetUserByIDOutput{
-					ID: 1,
-					Name: "test",
+					ID:    1,
+					Name:  "test",
 					Email: "test1@example.com",
 				}, nil
 			},
 			wantStatus: http.StatusOK,
 			wantUser: &api.User{
-				Id: 1,
-				Name: "test",
+				Id:    1,
+				Name:  "test",
 				Email: "test1@example.com",
 			},
 		},
@@ -286,8 +286,7 @@ func TestMe(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			ctx := t.Context()
-			ctx = contextWithUser(1)
+			ctx := contextWithUser(1)
 			ah := &AuthHandler{
 				uu: &mockUserUsecase{
 					getUserByIDFn: tc.getUserByIDFn,

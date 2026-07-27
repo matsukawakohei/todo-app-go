@@ -148,8 +148,8 @@ func (ah AuthHandler) Me(ctx context.Context, _ api.MeRequestObject) (api.MeResp
 	}
 
 	user := api.User{
-		Id: int(output.ID),
-		Name: output.Name,
+		Id:    int(output.ID),
+		Name:  output.Name,
 		Email: types.Email(output.Email),
 	}
 
