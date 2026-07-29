@@ -37,7 +37,7 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 
 ## 主な機能
 
-- ユーザー登録・ログイン・ログアウト（JWTをHTTP OnlyなCookieに格納）
+- ユーザー登録・ログイン・ログアウト・ログイン中判定（JWTをHTTP OnlyなCookieに格納）
 - CSRF対策（Cookie/Header方式）
 - ラベルのCRUD（作成・一覧取得・削除）
 - タスクのCRUD（作成・一覧取得・更新・削除）
@@ -50,6 +50,7 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 | POST | /api/v1/auth/signup | 不要 | ユーザー登録 |
 | POST | /api/v1/auth/login | 不要 | ログイン |
 | POST | /api/v1/auth/logout | 不要 | ログアウト |
+| POST | /api/v1/auth/me | 必要 | ログイン中判定（ログインユーザー情報取得） |
 | GET | /api/v1/labels | 必要 | ラベル一覧取得 |
 | POST | /api/v1/labels | 必要 | ラベル作成 |
 | DELETE | /api/v1/labels/:id | 必要 | ラベル削除 |
