@@ -37,7 +37,7 @@ JWT + Cookieによる認証、CSRF対策、レイヤードアーキテクチャ�
 
 ## 主な機能
 
-- ユーザー登録・ログイン・ログアウト・ログイン中判定（JWTをHTTP OnlyなCookieに格納）
+- ユーザー登録・ログイン・ログアウト・ログイン中判定（HttpOnly属性を付与したCookieにJWTを格納）
 - CSRF対策（Cookie/Header方式）
 - ラベルのCRUD（作成・一覧取得・削除）
 - タスクのCRUD（作成・一覧取得・更新・削除）
